@@ -1,0 +1,26 @@
+{
+  "name": "VB TippLiga 2026",
+  "short_name": "VB TippLiga",
+  "description": "Családi és baráti foci VB tippverseny.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbfcf8",
+  "theme_color": "#1d3443",
+  "lang": "hu-HU",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

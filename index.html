@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1d3443" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VB TippLiga" />
+    <title>VB TippLiga 2026</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png" />
+    <link rel="stylesheet" href="styles.css?v=13" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <img src="assets/world-cup-hero.png" alt="" class="hero-image" />
+        <div class="hero-overlay"></div>
+        <nav class="topbar">
+          <div class="brand">
+            <span class="brand-mark">26</span>
+            <span>VB TippLiga</span>
+          </div>
+          <div id="sessionBox" class="session-box"></div>
+        </nav>
+        <section class="hero-content">
+          <p class="eyebrow">Szalai tippverseny</p>
+          <h1>VB TippLiga 2026</h1>
+          <p class="hero-copy">
+            Tippelj a meccsekre, kövesd a tabellát, és élvezd a játékot
+          </p>
+        </section>
+      </header>
+
+      <main>
+        <section id="loginPanel" class="login-panel">
+          <form id="loginForm" class="login-form">
+            <label>
+              Név
+              <input id="loginName" type="text" autocomplete="name" required placeholder="pl. Máté" />
+            </label>
+            <label>
+              Jelszó
+              <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="gagyi jelszó" />
+            </label>
+            <div class="login-actions">
+              <button type="submit" name="mode" value="login">Belépés</button>
+            </div>
+            <div class="register-entry">
+              <span>Még nincs fiókod?</span>
+              <button id="openRegisterBtn" class="secondary" type="button">Regisztráció</button>
+            </div>
+            <p id="loginMessage" class="form-message"></p>
+          </form>
+        </section>
+
+        <section id="dashboard" class="dashboard hidden">
+          <div class="dashboard-head">
+            <div>
+              <p class="section-kicker">Tippközpont</p>
+              <h2 id="welcomeTitle">Szia!</h2>
+            </div>
+            <div class="score-strip">
+              <div>
+                <small>pontjaid:</small>
+                <span id="myScore">0</span>
+              </div>
+              <div>
+                <small>jóváhagyásra vár:</small>
+                <span id="pendingCount">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Nézetek">
+            <button class="tab active" data-view="matches" type="button">Tippelek!</button>
+            <button class="tab" data-view="myTips" type="button">Korábbi Tippjeim</button>
+            <button class="tab" data-view="standings" type="button">Tabella</button>
+            <button class="tab" data-view="played" type="button">Eredmények</button>
+            <button class="tab" data-view="results" type="button">Eredmény feltöltése</button>
+            <button class="tab admin-only hidden" data-view="tips" type="button">Minden tipp</button>
+            <button class="tab admin-only hidden" data-view="admin" type="button">Admin</button>
+          </div>
+
+          <section id="matchesView" class="view active"></section>
+          <section id="standingsView" class="view"></section>
+          <section id="myTipsView" class="view"></section>
+          <section id="tipsView" class="view"></section>
+          <section id="resultsView" class="view"></section>
+          <section id="playedView" class="view"></section>
+          <section id="adminView" class="view"></section>
+        </section>
+      </main>
+    </div>
+
+    <template id="matchTemplate">
+      <article class="match-card">
+        <div class="match-meta">
+          <span class="pill stage"></span>
+          <span class="kickoff"></span>
+        </div>
+        <div class="teams">
+          <strong class="home"></strong>
+          <span>vs</span>
+          <strong class="away"></strong>
+        </div>
+        <div class="status-line"></div>
+        <form class="prediction-form">
+          <div class="score-inputs">
+            <label>Hazai <input name="homeGoals" type="number" min="0" max="20" required /></label>
+            <label>Vendég <input name="awayGoals" type="number" min="0" max="20" required /></label>
+          </div>
+          <label class="qualifier-row hidden">
+            Továbbjutó döntetlen tippnél
+            <select name="qualifier">
+              <option value="">Válassz továbbjutót</option>
+            </select>
+          </label>
+          <button type="submit">Tipp mentése</button>
+        </form>
+        <div class="history-grid"></div>
+      </article>
+    </template>
+
+    <dialog id="registerDialog" class="modal">
+      <form id="registerForm" class="modal-card">
+        <div>
+          <p class="section-kicker">Regisztráció</p>
+          <h2>Új játékos</h2>
+        </div>
+        <label>
+          Név
+          <input id="registerName" type="text" autocomplete="name" required placeholder="pl. Máté" />
+        </label>
+        <label>
+          Jelszó
+          <input id="registerPassword" type="password" autocomplete="new-password" required placeholder="gagyi jelszó" />
+        </label>
+        <label>
+          Admin kód
+          <input id="registerAdminCode" type="password" placeholder="opcionális" />
+        </label>
+        <div class="login-actions">
+          <button type="submit">Regisztráció</button>
+          <button id="closeRegisterBtn" class="secondary" type="button">Mégse</button>
+        </div>
+        <p id="registerMessage" class="form-message"></p>
+      </form>
+    </dialog>
+
+    <script src="app.js?v=13"></script>
+  </body>
+</html>

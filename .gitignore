@@ -1,0 +1,19 @@
+# Runtime data
+/data/
+/backups/
+*.log
+
+# Local environment and secrets
+.env
+.env.*
+
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

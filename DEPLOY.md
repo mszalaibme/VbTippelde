@@ -1,0 +1,139 @@
+# VB TippLiga VPS deploy
+
+## Futtatás VPS-en
+
+1. Masold fel a teljes `outputs` mappat a VPS-re, peldaul ide:
+
+   ```bash
+   /opt/vb-tippelde
+   ```
+
+2. Inditsd el a Node szervert:
+
+   ```bash
+   cd /opt/vb-tippelde
+   PORT=3000 node server.js
+   ```
+
+3. Caddy pelda konfiguracio:
+
+   ```caddy
+   tippliga.example.com {
+     encode gzip
+     reverse_proxy 127.0.0.1:3000
+   }
+   ```
+
+## Adattarolas
+
+Az app ket helyre ment:
+
+- bongeszoben `localStorage`-ba, hogy helyben is megmaradjon az allapot,
+- VPS-en a Node szerveren keresztul JSON fajlba.
+
+A szerveroldali fo adatfajl:
+
+```text
+/opt/vb-tippelde/data/state.json
+```
+
+Ebben van minden fontos adat: felhasznalok, jelszo hash-ek, meccsek, tippek, eredmenybekuldesek, jovahagyott eredmenyek es admin allapotok.
+
+Fontos: jelenleg nincs beépített automatikus backup a kodban. Az automatikus mentest kulon kell futtatni a VPS-en, peldaul `cron` segitsegevel.
+
+## Backup javaslat
+
+Hozz letre kulon backup mappat:
+
+```bash
+sudo mkdir -p /var/backups/vb-tippliga
+sudo chown -R $USER:$USER /var/backups/vb-tippliga
+```
+
+Kezi backup parancs:
+
+```bash
+cp /opt/vb-tippelde/data/state.json \
+  /var/backups/vb-tippliga/state-$(date +%F-%H%M).json
+```
+
+Napi automatikus backup `cron`-nal:
+
+```bash
+crontab -e
+```
+
+Add hozza ezt a sort, peldaul minden nap 23:00-kor:
+
+```cron
+0 23 * * * cp /opt/vb-tippelde/data/state.json /var/backups/vb-tippliga/state-$(date +\%F-\%H\%M).json
+```
+
+Meccsnapokon erdemes surubb mentest hasznalni, peldaul 2 orankent:
+
+```cron
+0 */2 * * * cp /opt/vb-tippelde/data/state.json /var/backups/vb-tippliga/state-$(date +\%F-\%H\%M).json
+```
+
+## Regi backupok takaritasa
+
+Pelda: 30 napnal regebbi backupok torlese naponta 23:30-kor:
+
+```cron
+30 23 * * * find /var/backups/vb-tippliga -name 'state-*.json' -type f -mtime +30 -delete
+```
+
+## Kulso backup
+
+Ne csak ugyanazon a VPS-en legyen mentes. Idonkent masold ki a backupokat kulso tarhelyre is, peldaul:
+
+- masik szerver,
+- Hetzner Storage Box,
+- S3-kompatibilis tarhely,
+- Google Drive / Dropbox / sajat gep.
+
+Minimum javaslat:
+
+- napi helyi backup a VPS-en,
+- meccsnapokon 2 orankenti backup,
+- heti kulso backup,
+- nagyobb admin muvelet elott kezi export az appbol.
+
+Az app Admin feluleten van `Adatok exportalasa JSON-kent` gomb is. Ez kezi biztonsagi mentesnek jo.
+
+## Visszaallitas backupbol
+
+1. Allitsd le a Node szervert.
+
+2. Mentsd el a jelenlegi allapotot, mielott felulirod:
+
+   ```bash
+   cp /opt/vb-tippelde/data/state.json \
+     /opt/vb-tippelde/data/state-before-restore-$(date +%F-%H%M).json
+   ```
+
+3. Masold vissza a kivalasztott backupot:
+
+   ```bash
+   cp /var/backups/vb-tippliga/state-2026-06-08-2300.json \
+     /opt/vb-tippelde/data/state.json
+   ```
+
+4. Inditsd ujra a Node szervert.
+
+## Jelszavak tarolasa
+
+A jelszavak nem kerulnek olvashato formaban a `state.json` fajlba. Az app minden jelszot egyedi salt + PBKDF2-SHA-256 hash formaban tarol:
+
+- `passwordSalt`
+- `passwordHash`
+- `passwordVersion`
+- `passwordIterations`
+
+Plaintext `password` mezot a kliens mentés elott torol, es a szerver is kidobja mentéskor, ha veletlenul beerkezne.
+
+Fontos: ez csaladi/barati hasznalatra mar sokkal jobb, mint a sima szoveges jelszo, de tovabbra sem banki szintu auth rendszer. Ha nagyobb kornek nyitod meg, erdemes kesobb szerveroldali session kezelest, HTTPS-t, rate limitet es SQLite/adatbazis alapu tarolast hasznalni.
+
+## CSV import
+
+CSV import mukodik a bongeszoben es a Node szerveres verzioban is. A `csoport` oszlop opcionális, tehat csoportnev nelkuli CSV export is feltoltheto.
