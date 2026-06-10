@@ -1,0 +1,11 @@
+{
+  "passwordIterations": 150000,
+  "systemAdmin": {
+    "id": "__system_admin__",
+    "name": "admin",
+    "passwordSalt": "NpmIyFI9JOoFRBlwK8uJ1A==",
+    "passwordHash": "erOma9EQJKks86WBDWq3Xxum2v+QogUVkLtghUHqr7w=",
+    "passwordVersion": 2,
+    "passwordIterations": 150000
+  }
+}

@@ -364,6 +364,18 @@ main {
   font-weight: 750;
 }
 
+.form-message.is-error {
+  color: var(--coral);
+}
+
+.form-message.is-success {
+  color: #1f7a45;
+}
+
+#dashboardMessage {
+  margin: 14px 0 0;
+}
+
 .modal {
   width: min(420px, calc(100vw - 28px));
   border: 0;

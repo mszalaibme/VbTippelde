@@ -1,107 +1,768 @@
 {
-  "users": [
-    {
-      "id": "user-mihaly",
-      "name": "Mihály",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "GlE3k0uTN8rFJKv5WNI0Tg==",
-      "passwordHash": "v0PoUqi36hczX7RL/YMH3PTpgnxzC6XRjkWcdZkmOyE=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-miklos",
-      "name": "Miklós",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "AR3T1jw5PustisaoACjT3Q==",
-      "passwordHash": "zYkgpJrw4o1v4Su+d1PRavvmnInx2FsDGJ3jxAXfew0=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-marci",
-      "name": "Marci",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "dZK07XaDcbFRRRp7TsXBHw==",
-      "passwordHash": "v2Nw5sQQ9PK4uZBq/vcTzvSy9gFBW5xg41+InvQPfe4=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-merse",
-      "name": "Merse",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "yzi1oE9LTHTJBHnhQCLcaA==",
-      "passwordHash": "O7D57NEE6fK5P4jfeQ4mq208G2x/PIt7wPILLC+Y72U=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-anya",
-      "name": "Anya",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "51eZOsZn6RQqEiRraZV73A==",
-      "passwordHash": "AL15uugRWhvFMdi9Ku+Fyz13SnpcGq2qsIpxCSk2abU=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-kinga",
-      "name": "Kinga",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "fwWIz2Xn3IRFEsp6AYAyQw==",
-      "passwordHash": "rdPb2yB7r4up8JdUg3kH61R1wiaaOmnhJR4SWrGCK1I=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-orsi",
-      "name": "Orsi",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "84eqwLI5dwWoNscAv8UFMA==",
-      "passwordHash": "7yDJ8FYF/GPAq7Co+YqFz8D65X1/KBkNELaGdisYPlM=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    },
-    {
-      "id": "user-mor",
-      "name": "Mór",
-      "isAdmin": false,
-      "isSystemAdmin": false,
-      "mustChangePassword": false,
-      "createdAt": "2026-06-10T00:00:00.000Z",
-      "passwordSalt": "ZL3Dc763p4JaFL20Nf+kfQ==",
-      "passwordHash": "Cp+kiD0fTy2YfAgaHvTi89ajgPHx+PMoEjyJ+turgwo=",
-      "passwordVersion": 2,
-      "passwordIterations": 150000
-    }
-  ],
-  "matches": [],
-  "predictions": [],
-  "resultSubmissions": [],
-  "predictionSubmissions": [],
-  "passwordResetRequests": [],
-  "hiddenMissingTips": [],
-  "approvedResults": []
+    "users": [
+        {
+            "passwordSalt": "GlE3k0uTN8rFJKv5WNI0Tg==",
+            "passwordHash": "v0PoUqi36hczX7RL\/YMH3PTpgnxzC6XRjkWcdZkmOyE=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-mihaly",
+            "name": "Mihály",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "AR3T1jw5PustisaoACjT3Q==",
+            "passwordHash": "zYkgpJrw4o1v4Su+d1PRavvmnInx2FsDGJ3jxAXfew0=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-miklos",
+            "name": "Miklós",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "dZK07XaDcbFRRRp7TsXBHw==",
+            "passwordHash": "v2Nw5sQQ9PK4uZBq\/vcTzvSy9gFBW5xg41+InvQPfe4=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-marci",
+            "name": "Marci",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "yzi1oE9LTHTJBHnhQCLcaA==",
+            "passwordHash": "O7D57NEE6fK5P4jfeQ4mq208G2x\/PIt7wPILLC+Y72U=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-merse",
+            "name": "Merse",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "51eZOsZn6RQqEiRraZV73A==",
+            "passwordHash": "AL15uugRWhvFMdi9Ku+Fyz13SnpcGq2qsIpxCSk2abU=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-anya",
+            "name": "Anya",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "fwWIz2Xn3IRFEsp6AYAyQw==",
+            "passwordHash": "rdPb2yB7r4up8JdUg3kH61R1wiaaOmnhJR4SWrGCK1I=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-kinga",
+            "name": "Kinga",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "84eqwLI5dwWoNscAv8UFMA==",
+            "passwordHash": "7yDJ8FYF\/GPAq7Co+YqFz8D65X1\/KBkNELaGdisYPlM=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-orsi",
+            "name": "Orsi",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "ZL3Dc763p4JaFL20Nf+kfQ==",
+            "passwordHash": "Cp+kiD0fTy2YfAgaHvTi89ajgPHx+PMoEjyJ+turgwo=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-mor",
+            "name": "Mór",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        },
+        {
+            "passwordSalt": "hidwu8ifqv2x9vD6pwaC7A==",
+            "passwordHash": "0aJ0gJNdli7jO/CDW3jqO7mTuGtSGy89HYZkLA6lS/E=",
+            "passwordVersion": 2,
+            "passwordIterations": 150000,
+            "isAdmin": false,
+            "isSystemAdmin": false,
+            "mustChangePassword": false,
+            "id": "user-matyas",
+            "name": "Mátyás",
+            "createdAt": "2026-06-10T00:00:00.000Z"
+        }
+    ],
+    "matches": [
+        {
+            "group": "A",
+            "id": "csv-1781114687413421-0",
+            "home": "Mexikó",
+            "away": "Dél-afrikai Köztársaság",
+            "kickoff": "2026-06-11T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "A",
+            "id": "csv-1781114687413477-1",
+            "home": "Dél-Korea",
+            "away": "Csehország",
+            "kickoff": "2026-06-12T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413485-2",
+            "home": "Kanada",
+            "away": "Bosznia-Hercegovina",
+            "kickoff": "2026-06-12T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413491-3",
+            "home": "Egyesült Államok",
+            "away": "Paraguay",
+            "kickoff": "2026-06-13T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413496-4",
+            "home": "Katar",
+            "away": "Svájc",
+            "kickoff": "2026-06-13T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413500-5",
+            "home": "Brazília",
+            "away": "Marokkó",
+            "kickoff": "2026-06-13T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413505-6",
+            "home": "Haiti",
+            "away": "Skócia",
+            "kickoff": "2026-06-14T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413510-7",
+            "home": "Ausztrália",
+            "away": "Törökország",
+            "kickoff": "2026-06-14T04:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413514-8",
+            "home": "Németország",
+            "away": "Curaçao",
+            "kickoff": "2026-06-14T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413519-9",
+            "home": "Hollandia",
+            "away": "Japán",
+            "kickoff": "2026-06-14T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413524-10",
+            "home": "Elefántcsontpart",
+            "away": "Ecuador",
+            "kickoff": "2026-06-14T23:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413528-11",
+            "home": "Svédország",
+            "away": "Tunézia",
+            "kickoff": "2026-06-15T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413533-12",
+            "home": "Spanyolország",
+            "away": "Zöld-foki Köztársaság",
+            "kickoff": "2026-06-15T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413538-13",
+            "home": "Belgium",
+            "away": "Egyiptom",
+            "kickoff": "2026-06-15T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413542-14",
+            "home": "Szaúd-Arábia",
+            "away": "Uruguay",
+            "kickoff": "2026-06-15T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413547-15",
+            "home": "Irán",
+            "away": "Új-Zéland",
+            "kickoff": "2026-06-16T04:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413552-16",
+            "home": "Franciaország",
+            "away": "Szenegál",
+            "kickoff": "2026-06-16T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413556-17",
+            "home": "Irak",
+            "away": "Norvégia",
+            "kickoff": "2026-06-16T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413561-18",
+            "home": "Argentína",
+            "away": "Algéria",
+            "kickoff": "2026-06-17T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413565-19",
+            "home": "Ausztria",
+            "away": "Jordánia",
+            "kickoff": "2026-06-17T04:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413570-20",
+            "home": "Portugália",
+            "away": "Kongói Demokratikus Köztársaság",
+            "kickoff": "2026-06-17T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413575-21",
+            "home": "Anglia",
+            "away": "Horvátország",
+            "kickoff": "2026-06-17T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413579-22",
+            "home": "Ghána",
+            "away": "Panama",
+            "kickoff": "2026-06-17T23:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413584-23",
+            "home": "Üzbegisztán",
+            "away": "Kolumbia",
+            "kickoff": "2026-06-18T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "A",
+            "id": "csv-1781114687413588-24",
+            "home": "Csehország",
+            "away": "Dél-afrikai Köztársaság",
+            "kickoff": "2026-06-18T16:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413593-25",
+            "home": "Svájc",
+            "away": "Bosznia-Hercegovina",
+            "kickoff": "2026-06-18T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413597-26",
+            "home": "Kanada",
+            "away": "Katar",
+            "kickoff": "2026-06-18T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "A",
+            "id": "csv-1781114687413602-27",
+            "home": "Mexikó",
+            "away": "Dél-Korea",
+            "kickoff": "2026-06-19T03:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413606-28",
+            "home": "Egyesült Államok",
+            "away": "Ausztrália",
+            "kickoff": "2026-06-19T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413611-29",
+            "home": "Skócia",
+            "away": "Marokkó",
+            "kickoff": "2026-06-19T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413616-30",
+            "home": "Brazília",
+            "away": "Haiti",
+            "kickoff": "2026-06-20T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413620-31",
+            "home": "Törökország",
+            "away": "Paraguay",
+            "kickoff": "2026-06-20T04:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413625-32",
+            "home": "Hollandia",
+            "away": "Svédország",
+            "kickoff": "2026-06-20T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413629-33",
+            "home": "Németország",
+            "away": "Elefántcsontpart",
+            "kickoff": "2026-06-20T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413634-34",
+            "home": "Ecuador",
+            "away": "Curaçao",
+            "kickoff": "2026-06-21T00:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413638-35",
+            "home": "Tunézia",
+            "away": "Japán",
+            "kickoff": "2026-06-21T04:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413643-36",
+            "home": "Spanyolország",
+            "away": "Szaúd-Arábia",
+            "kickoff": "2026-06-21T16:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413647-37",
+            "home": "Belgium",
+            "away": "Irán",
+            "kickoff": "2026-06-21T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413652-38",
+            "home": "Uruguay",
+            "away": "Zöld-foki Köztársaság",
+            "kickoff": "2026-06-21T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413656-39",
+            "home": "Új-Zéland",
+            "away": "Egyiptom",
+            "kickoff": "2026-06-22T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413661-40",
+            "home": "Argentína",
+            "away": "Ausztria",
+            "kickoff": "2026-06-22T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413665-41",
+            "home": "Franciaország",
+            "away": "Irak",
+            "kickoff": "2026-06-22T21:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413670-42",
+            "home": "Norvégia",
+            "away": "Szenegál",
+            "kickoff": "2026-06-23T00:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413675-43",
+            "home": "Jordánia",
+            "away": "Algéria",
+            "kickoff": "2026-06-23T03:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413679-44",
+            "home": "Portugália",
+            "away": "Üzbegisztán",
+            "kickoff": "2026-06-23T17:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413684-45",
+            "home": "Anglia",
+            "away": "Ghána",
+            "kickoff": "2026-06-23T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413689-46",
+            "home": "Panama",
+            "away": "Horvátország",
+            "kickoff": "2026-06-23T23:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413693-47",
+            "home": "Kolumbia",
+            "away": "Kongói Demokratikus Köztársaság",
+            "kickoff": "2026-06-24T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413698-48",
+            "home": "Svájc",
+            "away": "Kanada",
+            "kickoff": "2026-06-24T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "B",
+            "id": "csv-1781114687413702-49",
+            "home": "Bosznia-Hercegovina",
+            "away": "Katar",
+            "kickoff": "2026-06-24T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413707-50",
+            "home": "Skócia",
+            "away": "Brazília",
+            "kickoff": "2026-06-24T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "C",
+            "id": "csv-1781114687413711-51",
+            "home": "Marokkó",
+            "away": "Haiti",
+            "kickoff": "2026-06-24T22:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "A",
+            "id": "csv-1781114687413716-52",
+            "home": "Csehország",
+            "away": "Mexikó",
+            "kickoff": "2026-06-25T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "A",
+            "id": "csv-1781114687413723-53",
+            "home": "Dél-afrikai Köztársaság",
+            "away": "Dél-Korea",
+            "kickoff": "2026-06-25T01:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413728-54",
+            "home": "Ecuador",
+            "away": "Németország",
+            "kickoff": "2026-06-25T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "E",
+            "id": "csv-1781114687413732-55",
+            "home": "Curaçao",
+            "away": "Elefántcsontpart",
+            "kickoff": "2026-06-25T20:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413737-56",
+            "home": "Japán",
+            "away": "Svédország",
+            "kickoff": "2026-06-25T23:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "F",
+            "id": "csv-1781114687413741-57",
+            "home": "Tunézia",
+            "away": "Hollandia",
+            "kickoff": "2026-06-25T23:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413746-58",
+            "home": "Törökország",
+            "away": "Egyesült Államok",
+            "kickoff": "2026-06-26T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "D",
+            "id": "csv-1781114687413750-59",
+            "home": "Paraguay",
+            "away": "Ausztrália",
+            "kickoff": "2026-06-26T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413755-60",
+            "home": "Norvégia",
+            "away": "Franciaország",
+            "kickoff": "2026-06-26T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "I",
+            "id": "csv-1781114687413760-61",
+            "home": "Szenegál",
+            "away": "Irak",
+            "kickoff": "2026-06-26T19:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413765-62",
+            "home": "Zöld-foki Köztársaság",
+            "away": "Szaúd-Arábia",
+            "kickoff": "2026-06-27T00:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "H",
+            "id": "csv-1781114687413769-63",
+            "home": "Uruguay",
+            "away": "Spanyolország",
+            "kickoff": "2026-06-27T00:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413774-64",
+            "home": "Egyiptom",
+            "away": "Irán",
+            "kickoff": "2026-06-27T03:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "G",
+            "id": "csv-1781114687413778-65",
+            "home": "Új-Zéland",
+            "away": "Belgium",
+            "kickoff": "2026-06-27T03:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413783-66",
+            "home": "Panama",
+            "away": "Anglia",
+            "kickoff": "2026-06-27T21:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "L",
+            "id": "csv-1781114687413787-67",
+            "home": "Horvátország",
+            "away": "Ghána",
+            "kickoff": "2026-06-27T21:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413792-68",
+            "home": "Kolumbia",
+            "away": "Portugália",
+            "kickoff": "2026-06-27T23:30:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "K",
+            "id": "csv-1781114687413796-69",
+            "home": "Kongói Demokratikus Köztársaság",
+            "away": "Üzbegisztán",
+            "kickoff": "2026-06-27T23:30:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413801-70",
+            "home": "Algéria",
+            "away": "Ausztria",
+            "kickoff": "2026-06-28T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        },
+        {
+            "group": "J",
+            "id": "csv-1781114687413806-71",
+            "home": "Jordánia",
+            "away": "Argentína",
+            "kickoff": "2026-06-28T02:00:00Z",
+            "label": "csoportkör",
+            "stage": "group"
+        }
+    ],
+    "predictions": [],
+    "resultSubmissions": [],
+    "predictionSubmissions": [],
+    "passwordResetRequests": [],
+    "hiddenMissingTips": [],
+    "approvedResults": []
 }

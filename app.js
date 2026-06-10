@@ -1,104 +1,29 @@
-const STORAGE_KEY = "vb-tippliga-2026-v4";
-const CURRENT_USER_KEY = "vb-tippliga-current-user-v4";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
-const PASSWORD_ITERATIONS = 150000;
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
-const SYSTEM_ADMIN_ID = "__system_admin__";
-const SYSTEM_ADMIN_NAME = "admin";
-const SYSTEM_ADMIN_PASSWORD = "admin8520";
 
 const seedMatches = [];
 
-const knockoutBracket = [
-  {
-    title: "32-es kör",
-    matches: [
-      { no: 73, home: "A csoport 2.", away: "B csoport 2." },
-      { no: 74, home: "E csoport 1.", away: "A/B/C/D/F csoport 3." },
-      { no: 75, home: "F csoport 1.", away: "C csoport 2." },
-      { no: 76, home: "C csoport 1.", away: "F csoport 2." },
-      { no: 77, home: "I csoport 1.", away: "C/D/F/G/H csoport 3." },
-      { no: 78, home: "E csoport 2.", away: "I csoport 2." },
-      { no: 79, home: "A csoport 1.", away: "C/E/F/H/I csoport 3." },
-      { no: 80, home: "L csoport 1.", away: "E/H/I/J/K csoport 3." },
-      { no: 81, home: "D csoport 1.", away: "B/E/F/I/J csoport 3." },
-      { no: 82, home: "G csoport 1.", away: "A/E/H/I/J csoport 3." },
-      { no: 83, home: "K csoport 2.", away: "L csoport 2." },
-      { no: 84, home: "H csoport 1.", away: "J csoport 2." },
-      { no: 85, home: "B csoport 1.", away: "E/F/G/I/J csoport 3." },
-      { no: 86, home: "J csoport 1.", away: "H csoport 2." },
-      { no: 87, home: "K csoport 1.", away: "D/E/I/J/L csoport 3." },
-      { no: 88, home: "D csoport 2.", away: "G csoport 2." }
-    ]
+const defaultConfig = {
+  admin: {
+    passwordIterations: 150000,
+    systemAdmin: {
+      id: "__system_admin__",
+      name: "admin"
+    }
   },
-  {
-    title: "Nyolcaddöntő",
-    matches: [
-      { no: 89, home: "73. meccs győztese", away: "75. meccs győztese" },
-      { no: 90, home: "74. meccs győztese", away: "77. meccs győztese" },
-      { no: 91, home: "76. meccs győztese", away: "78. meccs győztese" },
-      { no: 92, home: "79. meccs győztese", away: "80. meccs győztese" },
-      { no: 93, home: "83. meccs győztese", away: "84. meccs győztese" },
-      { no: 94, home: "81. meccs győztese", away: "82. meccs győztese" },
-      { no: 95, home: "86. meccs győztese", away: "88. meccs győztese" },
-      { no: 96, home: "85. meccs győztese", away: "87. meccs győztese" }
-    ]
-  },
-  {
-    title: "Negyeddöntő",
-    matches: [
-      { no: 97, home: "89. meccs győztese", away: "90. meccs győztese" },
-      { no: 98, home: "93. meccs győztese", away: "94. meccs győztese" },
-      { no: 99, home: "91. meccs győztese", away: "92. meccs győztese" },
-      { no: 100, home: "95. meccs győztese", away: "96. meccs győztese" }
-    ]
-  },
-  {
-    title: "Elődöntő",
-    matches: [
-      { no: 101, home: "97. meccs győztese", away: "98. meccs győztese" },
-      { no: 102, home: "99. meccs győztese", away: "100. meccs győztese" }
-    ]
-  },
-  {
-    title: "Döntők",
-    matches: [
-      { no: 103, home: "101. meccs vesztese", away: "102. meccs vesztese", note: "Bronzmeccs" },
-      { no: 104, home: "101. meccs győztese", away: "102. meccs győztese", note: "Döntő" }
-    ]
-  }
-];
+  knockoutBracket: []
+};
 
 let state = loadState();
-let currentUserId = localStorage.getItem(CURRENT_USER_KEY);
-let serverSyncAvailable = false;
+let config = normalizeConfig({});
+let currentUserId = null;
+let serverSyncAvailable = true;
 let suppressServerSave = false;
-
-function hasWebCrypto() {
-  return Boolean(window.crypto?.subtle && window.crypto?.getRandomValues);
-}
+let dashboardFlash = null;
 
 function shouldUseServerStorage() {
-  return window.location.protocol === "http:" || window.location.protocol === "https:";
-}
-
-function createId() {
-  if (typeof window.crypto?.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-  const random = new Uint8Array(16);
-  if (window.crypto?.getRandomValues) {
-    window.crypto.getRandomValues(random);
-  } else {
-    for (let index = 0; index < random.length; index += 1) {
-      random[index] = Math.floor(Math.random() * 256);
-    }
-  }
-  random[6] = (random[6] & 0x0f) | 0x40;
-  random[8] = (random[8] & 0x3f) | 0x80;
-  const hex = Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  return true;
 }
 
 const els = {
@@ -118,6 +43,7 @@ const els = {
   welcomeTitle: document.querySelector("#welcomeTitle"),
   myScore: document.querySelector("#myScore"),
   pendingCount: document.querySelector("#pendingCount"),
+  dashboardMessage: document.querySelector("#dashboardMessage"),
   passwordGate: document.querySelector("#passwordGate"),
   tabs: document.querySelector("#mainTabs"),
   matchesView: document.querySelector("#matchesView"),
@@ -130,22 +56,21 @@ const els = {
 };
 
 function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    return normalizeState(JSON.parse(saved));
-  }
-  const initial = {
-    users: [],
-    matches: seedMatches,
-    predictions: [],
-    predictionSubmissions: [],
-    resultSubmissions: [],
-    passwordResetRequests: [],
-    hiddenMissingTips: [],
-    approvedResults: []
+  return normalizeState({});
+}
+
+function normalizeConfig(value) {
+  const systemAdmin = {
+    ...defaultConfig.admin.systemAdmin,
+    ...(value?.admin?.systemAdmin || {})
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(initial)));
-  return initial;
+  return {
+    admin: {
+      passwordIterations: value?.admin?.passwordIterations || defaultConfig.admin.passwordIterations,
+      systemAdmin
+    },
+    knockoutBracket: Array.isArray(value?.knockoutBracket) ? value.knockoutBracket : defaultConfig.knockoutBracket
+  };
 }
 
 function normalizeState(value) {
@@ -162,17 +87,19 @@ function normalizeState(value) {
 }
 
 function isSystemAdminRecord(user) {
+  const systemAdmin = config.admin.systemAdmin;
   return Boolean(
     user?.isSystemAdmin ||
-    user?.id === SYSTEM_ADMIN_ID ||
-    user?.name?.toLowerCase() === SYSTEM_ADMIN_NAME
+    user?.id === systemAdmin.id ||
+    user?.name?.toLowerCase() === systemAdmin.name?.toLowerCase()
   );
 }
 
 function systemAdminUser() {
+  const systemAdmin = config.admin.systemAdmin;
   return {
-    id: SYSTEM_ADMIN_ID,
-    name: SYSTEM_ADMIN_NAME,
+    id: systemAdmin.id,
+    name: systemAdmin.name,
     isAdmin: true,
     isSystemAdmin: true,
     mustChangePassword: false,
@@ -180,18 +107,10 @@ function systemAdminUser() {
   };
 }
 
-function isSystemAdminLogin(name, password) {
-  return name.trim().toLowerCase() === SYSTEM_ADMIN_NAME && password === SYSTEM_ADMIN_PASSWORD;
-}
-
 function normalizeUser(user) {
   const normalized = { ...user };
   delete normalized.password;
   return {
-    passwordSalt: "",
-    passwordHash: "",
-    passwordVersion: 2,
-    passwordIterations: PASSWORD_ITERATIONS,
     isAdmin: false,
     isSystemAdmin: false,
     mustChangePassword: false,
@@ -199,52 +118,10 @@ function normalizeUser(user) {
   };
 }
 
-function saveState() {
-  stripPlainPasswords(state);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
-  if ((shouldUseServerStorage() || serverSyncAvailable) && !suppressServerSave) {
-    fetch("/api/state", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(state)
-    }).catch(() => {
-      serverSyncAvailable = false;
-    });
-  }
-}
-
-function stripPlainPasswords(value) {
-  (value.users || []).forEach((user) => {
-    delete user.password;
-  });
-}
-
-function sanitizedStateForStorage(value) {
-  const clean = {
-    ...value,
-    users: (value.users || []).filter((user) => !isSystemAdminRecord(user)).map((user) => {
-      const normalized = { ...user };
-      delete normalized.password;
-      return normalized;
-    })
-  };
-  return clean;
-}
-
 async function loadServerState() {
   try {
-    const response = await fetch("/api/state", { cache: "no-store" });
-    if (!response.ok) return;
-    const remoteState = normalizeState(await response.json());
-    serverSyncAvailable = true;
-    suppressServerSave = true;
-    state = remoteState;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
-    if (currentUserId && currentUserId !== SYSTEM_ADMIN_ID && !state.users.some((user) => user.id === currentUserId)) {
-      currentUserId = null;
-      localStorage.removeItem(CURRENT_USER_KEY);
-    }
-    suppressServerSave = false;
+    const data = await apiPost("bootstrap", {});
+    applyServerData(data);
     render();
     checkMatchReminders();
   } catch (error) {
@@ -253,7 +130,7 @@ async function loadServerState() {
 }
 
 function getUser() {
-  if (currentUserId === SYSTEM_ADMIN_ID) return systemAdminUser();
+  if (currentUserId === config.admin.systemAdmin.id) return systemAdminUser();
   return state.users.find((user) => user.id === currentUserId) || null;
 }
 
@@ -265,53 +142,17 @@ function canPlay(user) {
   return Boolean(user && !user.isSystemAdmin && !user.mustChangePassword);
 }
 
-function bytesToBase64(bytes) {
-  let binary = "";
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value) {
-  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
-}
-
-async function hashPassword(password, saltBase64) {
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
-    throw new Error("A böngésző ezen a címen nem támogatja a biztonságos helyi jelszókezelést.");
-  }
-  const salt = saltBase64 ? base64ToBytes(saltBase64) : crypto.getRandomValues(new Uint8Array(16));
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: PASSWORD_ITERATIONS,
-      hash: "SHA-256"
-    },
-    keyMaterial,
-    256
-  );
-  return {
-    salt: bytesToBase64(salt),
-    hash: bytesToBase64(new Uint8Array(bits))
-  };
-}
-
 async function apiPost(path, payload) {
+  const url = path.startsWith("/")
+    ? path
+    : `/api/rest.php?action=${encodeURIComponent(path)}`;
   let response;
   try {
-    response = await fetch(path, {
+    response = await fetch(url, {
       method: "POST",
+      credentials: "same-origin",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload || {})
     });
   } catch (error) {
     throw new Error("Nem sikerült elérni a szervert. Frissítsd az oldalt, vagy ellenőrizd, hogy fut-e az API.");
@@ -319,12 +160,30 @@ async function apiPost(path, payload) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("Az API végpont nem található. A Caddy valószínűleg nem proxyzza a /api kéréseket a Node szerverre.");
+      throw new Error(data.error || "Az API végpont nem található.");
     }
     if (response.status === 405) {
-      throw new Error("Az API végpont nem fogadja ezt a kérést. Ellenőrizd a Caddy proxyzást és a futó Node szervert.");
+      throw new Error(data.error || "Az API végpont nem fogadja ezt a kérést.");
     }
     throw new Error(data.error || `A szerver nem tudta feldolgozni a kérést. (${response.status})`);
+  }
+  return data;
+}
+
+async function apiUpload(formData) {
+  let response;
+  try {
+    response = await fetch("/api/upload.php", {
+      method: "POST",
+      credentials: "same-origin",
+      body: formData
+    });
+  } catch (error) {
+    throw new Error("Nem sikerült feltölteni a fájlt.");
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || `A szerver nem tudta feldolgozni a feltöltést. (${response.status})`);
   }
   return data;
 }
@@ -332,53 +191,44 @@ async function apiPost(path, payload) {
 function syncStateFromServer(nextState) {
   if (!nextState) return;
   state = normalizeState(nextState);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
   serverSyncAvailable = true;
 }
 
-async function ensureServerPasswordApi() {
-  if (serverSyncAvailable) return;
-  await loadServerState();
-  if (!serverSyncAvailable) {
-    throw new Error("Nem sikerült kapcsolódni az API-hoz. Frissítsd az oldalt, vagy ellenőrizd a szervert.");
-  }
+function setMessageState(node, type, text) {
+  if (!node) return;
+  node.textContent = text || "";
+  node.classList.toggle("hidden", !text);
+  node.classList.toggle("is-success", type === "success");
+  node.classList.toggle("is-error", type === "error");
 }
 
-async function setUserPassword(user, password) {
-  if (shouldUseServerStorage()) {
-    const data = await apiPost("/api/admin-set-password", {
-      adminId: currentUserId,
-      userId: user.id,
-      password
-    });
-    syncStateFromServer(data.state);
-    return;
-  }
-  if (!hasWebCrypto()) {
-    await ensureServerPasswordApi();
-    const data = await apiPost("/api/admin-set-password", {
-      adminId: currentUserId,
-      userId: user.id,
-      password
-    });
-    syncStateFromServer(data.state);
-    return;
-  }
-  const result = await hashPassword(password);
-  user.passwordSalt = result.salt;
-  user.passwordHash = result.hash;
-  user.passwordVersion = 2;
-  user.passwordIterations = PASSWORD_ITERATIONS;
-  delete user.password;
+function clearFormMessage(form) {
+  setMessageState(form?.querySelector(".form-message"), "", "");
 }
 
-async function verifyPassword(user, password) {
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
-    return false;
+function setFormMessage(form, type, text) {
+  setMessageState(form?.querySelector(".form-message"), type, text);
+}
+
+function setDashboardFlash(type, text) {
+  dashboardFlash = text ? { type, text } : null;
+  setMessageState(els.dashboardMessage, type, text);
+}
+
+function clearDashboardFlash() {
+  dashboardFlash = null;
+  setMessageState(els.dashboardMessage, "", "");
+}
+
+function applyServerData(data) {
+  if (!data) return;
+  if (data.config) {
+    config = normalizeConfig(data.config);
   }
-  if (!user.passwordHash || !user.passwordSalt) return false;
-  const result = await hashPassword(password, user.passwordSalt);
-  return result.hash === user.passwordHash;
+  syncStateFromServer(data.state);
+  if (Object.prototype.hasOwnProperty.call(data, "user")) {
+    currentUserId = data.user?.id || null;
+  }
 }
 
 async function createUserByAdmin(name, password, isAdmin) {
@@ -389,62 +239,20 @@ async function createUserByAdmin(name, password, isAdmin) {
   if (state.users.some((item) => item.name.toLowerCase() === normalized.toLowerCase())) {
     throw new Error("Ez a név már létezik.");
   }
-  const user = {
-    id: createId(),
+  const data = await apiPost("admin-create-user", {
     name: normalized,
-    isAdmin,
-    isSystemAdmin: false,
-    mustChangePassword: true,
-    createdByAdmin: admin.id,
-    createdAt: new Date().toISOString()
-  };
-  if (shouldUseServerStorage()) {
-    const data = await apiPost("/api/admin-create-user", {
-      adminId: admin.id,
-      name: normalized,
-      password,
-      isAdmin
-    });
-    syncStateFromServer(data.state);
-    return data.user;
-  }
-  if (serverSyncAvailable || !hasWebCrypto()) {
-    await ensureServerPasswordApi();
-    const data = await apiPost("/api/admin-create-user", {
-      adminId: admin.id,
-      name: normalized,
-      password,
-      isAdmin
-    });
-    syncStateFromServer(data.state);
-    return data.user;
-  }
-  await setUserPassword(user, password);
-  state.users.push(user);
-  saveState();
-  return user;
+    password,
+    isAdmin
+  });
+  applyServerData(data);
+  return data.createdUser;
 }
 
 async function loginUser(name, password) {
   const normalized = name.trim();
-  if (shouldUseServerStorage()) {
-    const data = await apiPost("/api/login", { name: normalized, password });
-    syncStateFromServer(data.state);
-    return data.user;
-  }
-  if (!hasWebCrypto()) {
-    await ensureServerPasswordApi();
-    const data = await apiPost("/api/login", { name: normalized, password });
-    syncStateFromServer(data.state);
-    return data.user;
-  }
-  if (isSystemAdminLogin(normalized, password)) {
-    return systemAdminUser();
-  }
-  const user = state.users.find((item) => item.name.toLowerCase() === normalized.toLowerCase());
-  if (!user) throw new Error("Nincs ilyen felhasználó.");
-  if (!(await verifyPassword(user, password))) throw new Error("Hibás jelszó.");
-  return user;
+  const data = await apiPost("login", { name: normalized, password });
+  applyServerData(data);
+  return data.user;
 }
 
 function formatDate(value) {
@@ -604,6 +412,7 @@ function render() {
   renderSession(user);
   if (!user) return;
   els.welcomeTitle.textContent = `Szia, ${user.name}!`;
+  setMessageState(els.dashboardMessage, dashboardFlash?.type || "", dashboardFlash?.text || "");
   document.querySelectorAll(".admin-only").forEach((item) => item.classList.toggle("hidden", !user.isAdmin));
   document.querySelectorAll(".player-only").forEach((item) => item.classList.toggle("hidden", !canPlay(user)));
   els.myScore.textContent = user.isSystemAdmin ? "-" : getStandings().find((row) => row.user.id === user.id)?.points || 0;
@@ -646,9 +455,10 @@ function renderSession(user) {
     <button type="button" id="logoutBtn">Kilépés</button>`;
   document.querySelector("#sessionPasswordForm")?.addEventListener("submit", changeOwnPassword);
   document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
-  document.querySelector("#logoutBtn").addEventListener("click", () => {
-    currentUserId = null;
-    localStorage.removeItem(CURRENT_USER_KEY);
+  document.querySelector("#logoutBtn").addEventListener("click", async () => {
+    const data = await apiPost("logout", {});
+    clearDashboardFlash();
+    applyServerData(data);
     render();
   });
   const passwordForm = document.querySelector("#sessionPasswordForm");
@@ -762,18 +572,6 @@ async function showMatchNotification(match) {
   const title = "Meccs kezdődik 1 óra múlva";
   const body = `${match.home} - ${match.away} · ${formatDate(match.kickoff)}`;
   try {
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration?.showNotification) {
-        await registration.showNotification(title, {
-          body,
-          tag: `match-${match.id}`,
-          icon: "assets/icon-192.png",
-          badge: "assets/icon-192.png"
-        });
-        return;
-      }
-    }
     new Notification(title, { body, tag: `match-${match.id}`, icon: "assets/icon-192.png" });
   } catch (error) {
     new Notification(title, { body });
@@ -916,7 +714,7 @@ function updateResultQualifierRequirement(form, match) {
   form.qualifier.disabled = !show;
 }
 
-function savePrediction(event) {
+async function savePrediction(event) {
   event.preventDefault();
   const user = getUser();
   const form = event.currentTarget;
@@ -927,45 +725,21 @@ function savePrediction(event) {
   const awayGoals = Number(form.awayGoals.value);
   const qualifier = homeGoals === awayGoals ? form.qualifier.value : "";
 
-  if (pendingFor(match.id)) {
-    state.predictionSubmissions.push({
-      id: createId(),
-      userId: user.id,
+  try {
+    const data = await apiPost("save-prediction", {
       matchId: match.id,
       homeGoals,
       awayGoals,
-      qualifier,
-      status: "pending",
-      submittedAt: new Date().toISOString()
+      qualifier
     });
-    saveState();
-    render();
-    return;
+    applyServerData(data);
+  } catch (error) {
+    alert(error.message);
   }
-
-  const existing = myPrediction(match.id);
-  if (existing) {
-    existing.homeGoals = homeGoals;
-    existing.awayGoals = awayGoals;
-    existing.qualifier = qualifier;
-    existing.updatedAt = new Date().toISOString();
-  } else {
-    state.predictions.push({
-      id: createId(),
-      userId: user.id,
-      matchId: match.id,
-      homeGoals,
-      awayGoals,
-      qualifier,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
-  }
-  saveState();
   render();
 }
 
-function submitResult(event) {
+async function submitResult(event) {
   event.preventDefault();
   const user = getUser();
   const form = event.currentTarget;
@@ -977,31 +751,18 @@ function submitResult(event) {
   const qualifier = match.stage === "knockout"
     ? (homeGoals === awayGoals ? form.qualifier.value : impliedQualifier(match, homeGoals, awayGoals, ""))
     : "";
-  if (user.isAdmin) {
-    upsertApprovedResult({
+  try {
+    const data = await apiPost("submit-result", {
       matchId: match.id,
       homeGoals,
       awayGoals,
-      qualifier,
-      approvedBy: user.id
+      qualifier
     });
+    applyServerData(data);
     form.reset();
-    saveState();
-    render();
-    return;
+  } catch (error) {
+    alert(error.message);
   }
-  state.resultSubmissions.push({
-    id: createId(),
-    userId: user.id,
-    matchId: match.id,
-    homeGoals,
-    awayGoals,
-    qualifier,
-    status: "pending",
-    submittedAt: new Date().toISOString()
-  });
-  form.reset();
-  saveState();
   render();
 }
 
@@ -1068,42 +829,23 @@ async function changeOwnPassword(event) {
     message.textContent = "A két új jelszó nem egyezik.";
     return;
   }
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
-    try {
-      const data = form.oldPassword
-        ? await apiPost("/api/change-password", {
-          userId: user.id,
-          oldPassword: form.oldPassword.value,
-          newPassword: form.newPassword.value
-        })
-        : await apiPost("/api/complete-first-password-change", {
-          userId: user.id,
-          newPassword: form.newPassword.value
-        });
-      syncStateFromServer(data.state);
-      form.reset();
-      message.textContent = "Jelszó módosítva.";
-      form.closest("details")?.removeAttribute("open");
-      render();
-    } catch (error) {
-      message.textContent = error.message;
-    }
-    return;
+  try {
+    const data = form.oldPassword
+      ? await apiPost("change-password", {
+        oldPassword: form.oldPassword.value,
+        newPassword: form.newPassword.value
+      })
+      : await apiPost("complete-first-password-change", {
+        newPassword: form.newPassword.value
+      });
+    applyServerData(data);
+    form.reset();
+    message.textContent = "Jelszó módosítva.";
+    form.closest("details")?.removeAttribute("open");
+    render();
+  } catch (error) {
+    message.textContent = error.message;
   }
-  if (form.oldPassword) {
-    if (!(await verifyPassword(user, form.oldPassword.value))) {
-      message.textContent = "A régi jelszó nem stimmel.";
-      return;
-    }
-  }
-  await setUserPassword(user, form.newPassword.value);
-  user.mustChangePassword = false;
-  user.passwordChangedAt = new Date().toISOString();
-  saveState();
-  form.reset();
-  message.textContent = "Jelszó módosítva.";
-  form.closest("details")?.removeAttribute("open");
-  render();
 }
 
 function renderTips() {
@@ -1414,7 +1156,7 @@ function knockoutBracketHtml() {
   return `
     <div class="bracket-scroll">
       <div class="bracket-grid">
-        ${knockoutBracket.map((round) => `
+        ${config.knockoutBracket.map((round) => `
           <section class="bracket-round">
             <h4>${round.title}</h4>
             ${round.matches.map(bracketSlotHtml).join("")}
@@ -1650,6 +1392,11 @@ function renderAdmin() {
     <div class="panel">
       <h3>Karbantartás</h3>
       <button class="secondary" type="button" id="exportBtn">Adatok exportálása JSON-ként</button>
+      <form id="stateUploadForm" class="admin-prediction-form">
+        <label>JSON visszatöltés <input name="stateFile" type="file" accept=".json,application/json" required /></label>
+        <button class="secondary" type="submit">Adatok feltöltése JSON-ból</button>
+        <p class="form-message"></p>
+      </form>
     </div>`;
 
   els.adminView.querySelectorAll("[data-approve]").forEach((button) => button.addEventListener("click", () => approveResult(button.dataset.approve)));
@@ -1669,6 +1416,7 @@ function renderAdmin() {
   els.adminView.querySelectorAll("[data-reset-user]").forEach((button) => button.addEventListener("click", () => resetUserPassword(button.dataset.resetUser)));
   els.adminView.querySelectorAll("[data-delete-user]").forEach((button) => button.addEventListener("click", () => deleteUser(button.dataset.deleteUser)));
   els.adminView.querySelector("#exportBtn").addEventListener("click", exportData);
+  els.adminView.querySelector("#stateUploadForm").addEventListener("submit", importStateFromJson);
 }
 
 function setupAdminPredictionForm() {
@@ -1713,184 +1461,180 @@ function fillMissingTip(value) {
   form.homeGoals.focus();
 }
 
-function hideMissingTip(value) {
+async function hideMissingTip(value) {
   if (!getUser()?.isAdmin) return;
-  if (!state.hiddenMissingTips.includes(value)) {
-    state.hiddenMissingTips.push(value);
+  try {
+    const data = await apiPost("hide-missing-tip", { key: value });
+    applyServerData(data);
+    setDashboardFlash("success", "A hiányzó tipp elrejtve.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
   }
-  saveState();
-  render();
 }
 
-function requestPasswordReset(name) {
+async function requestPasswordReset(name) {
   const requestedName = name.trim();
   if (!requestedName) throw new Error("Add meg a felhasználóneved.");
-  const user = state.users.find((item) => item.name.toLowerCase() === requestedName.toLowerCase());
-  const existing = state.passwordResetRequests.find((item) => {
-    const sameKnownUser = user && item.userId === user.id;
-    const sameName = item.requestedName.toLowerCase() === requestedName.toLowerCase();
-    return item.status === "pending" && (sameKnownUser || sameName);
-  });
-  if (existing) return;
-  state.passwordResetRequests.push({
-    id: createId(),
-    userId: user?.id || "",
-    requestedName,
-    status: "pending",
-    requestedAt: new Date().toISOString()
-  });
-  saveState();
+  const data = await apiPost("password-reset-request", { name: requestedName });
+  applyServerData(data);
 }
 
 async function resetPasswordFromRequest(requestId) {
   const request = state.passwordResetRequests.find((item) => item.id === requestId);
   const input = els.adminView.querySelector(`[data-reset-request-password="${requestId}"]`);
   const user = request ? userById(request.userId) : null;
-  if (!request || !input || !user || !getUser()?.isAdmin || !input.value) return;
-  if (shouldUseServerStorage()) {
-    const data = await apiPost("/api/resolve-password-reset", {
-      adminId: currentUserId,
+  if (!request || !input || !user || !getUser()?.isAdmin) return;
+  if (!input.value) {
+    setDashboardFlash("error", "Adj meg új jelszót a visszaállításhoz.");
+    return;
+  }
+  try {
+    const data = await apiPost("resolve-password-reset", {
       requestId,
       password: input.value
     });
-    syncStateFromServer(data.state);
+    applyServerData(data);
+    setDashboardFlash("success", "A jelszó beállítva, a kérés lezárva.");
     render();
-    return;
+  } catch (error) {
+    setDashboardFlash("error", error.message);
   }
-  if (!hasWebCrypto()) {
-    await ensureServerPasswordApi();
-    const data = await apiPost("/api/resolve-password-reset", {
-      adminId: currentUserId,
-      requestId,
-      password: input.value
-    });
-    syncStateFromServer(data.state);
-    render();
-    return;
-  }
-  await setUserPassword(user, input.value);
-  const updatedUser = userById(user.id);
-  if (updatedUser) updatedUser.mustChangePassword = true;
-  request.status = "resolved";
-  request.reviewedAt = new Date().toISOString();
-  request.reviewedBy = currentUserId;
-  saveState();
-  render();
 }
 
-function closePasswordResetRequest(requestId) {
+async function closePasswordResetRequest(requestId) {
   const request = state.passwordResetRequests.find((item) => item.id === requestId);
   if (!request || !getUser()?.isAdmin) return;
-  request.status = "closed";
-  request.reviewedAt = new Date().toISOString();
-  request.reviewedBy = currentUserId;
-  saveState();
-  render();
+  try {
+    const data = await apiPost("close-password-reset", { requestId });
+    applyServerData(data);
+    setDashboardFlash("success", "A jelszó-visszaállítási kérés lezárva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
 async function createUserFromAdminForm(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const message = form.querySelector(".form-message");
+  clearFormMessage(form);
   try {
     await createUserByAdmin(form.name.value, form.password.value, form.isAdmin.checked);
     form.reset();
-    message.textContent = "Felhasználó létrehozva. Első belépéskor jelszót kell módosítania.";
+    setDashboardFlash("success", "Felhasználó létrehozva. Első belépéskor jelszót kell módosítania.");
     render();
   } catch (error) {
-    message.textContent = error.message;
+    setFormMessage(form, "error", error.message);
   }
 }
 
-function saveAdminPrediction(event) {
+async function saveAdminPrediction(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const match = matchById(form.matchId.value);
   const user = userById(form.userId.value);
-  if (!match || !user || !getUser()?.isAdmin) return;
+  if (!getUser()?.isAdmin) return;
+  if (!match || !user) {
+    setDashboardFlash("error", "Válassz érvényes játékost és meccset.");
+    return;
+  }
 
   const homeGoals = Number(form.homeGoals.value);
   const awayGoals = Number(form.awayGoals.value);
   const qualifier = match.stage === "knockout" && homeGoals === awayGoals ? form.qualifier.value : "";
-  let prediction = state.predictions.find((item) => item.userId === user.id && item.matchId === match.id);
-  if (!prediction) {
-    prediction = {
-      id: createId(),
+  try {
+    const data = await apiPost("save-admin-prediction", {
       userId: user.id,
       matchId: match.id,
-      createdAt: new Date().toISOString()
-    };
-    state.predictions.push(prediction);
+      homeGoals,
+      awayGoals,
+      qualifier
+    });
+    applyServerData(data);
+    setDashboardFlash("success", "A tipp rögzítve lett a játékosnak.");
+  } catch (error) {
+    setDashboardFlash("error", error.message);
   }
-  prediction.homeGoals = homeGoals;
-  prediction.awayGoals = awayGoals;
-  prediction.qualifier = qualifier;
-  prediction.updatedAt = new Date().toISOString();
-  prediction.enteredByAdmin = currentUserId;
-  state.hiddenMissingTips = state.hiddenMissingTips.filter((key) => key !== missingTipKey(user.id, match.id));
-  saveState();
   render();
 }
 
-function addManualMatch(event) {
+async function addManualMatch(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const message = form.querySelector(".form-message");
+  clearFormMessage(form);
   if (!getUser()?.isAdmin) return;
 
   const kickoff = new Date(form.kickoff.value);
   if (Number.isNaN(kickoff.getTime())) {
-    message.textContent = "Hibás időpont.";
+    setFormMessage(form, "error", "Hibás időpont.");
     return;
   }
 
   const label = form.label.value.trim() || "Meccs";
-  state.matches.push({
-    id: `manual-${Date.now()}`,
-    home: form.home.value.trim(),
-    away: form.away.value.trim(),
-    kickoff: kickoff.toISOString(),
-    label,
-    group: form.group.value.trim(),
-    stage: label.toLowerCase().includes("csoport") ? "group" : "knockout"
-  });
-  saveState();
-  form.reset();
-  message.textContent = "Meccs hozzáadva.";
-  render();
+  try {
+    const data = await apiPost("add-match", {
+      home: form.home.value.trim(),
+      away: form.away.value.trim(),
+      kickoff: kickoff.toISOString(),
+      label,
+      group: form.group.value.trim()
+    });
+    applyServerData(data);
+    form.reset();
+    setDashboardFlash("success", "Meccs hozzáadva.");
+    render();
+  } catch (error) {
+    setFormMessage(form, "error", error.message);
+  }
 }
 
 async function importMatchesFromCsv(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const message = form.querySelector(".form-message");
+  clearFormMessage(form);
   const file = form.csvFile.files[0];
-  if (!file || !getUser()?.isAdmin) return;
+  if (!getUser()?.isAdmin) return;
+  if (!file) {
+    setFormMessage(form, "error", "Válassz CSV fájlt.");
+    return;
+  }
   try {
-    const text = await readCsvFileText(file);
-    const rows = parseCsv(text);
-    if (rows.length < 2) throw new Error("A CSV üres.");
-    const headers = rows[0].map(normalizeHeader);
-    const imported = rows.slice(1)
-      .filter((row) => row.some((cell) => cell.trim()))
-      .map((row, index) => csvRowToMatch(headers, row, index));
-    if (form.replaceMatches.checked) {
-      const keepIds = new Set(imported.map((match) => match.id));
-      state.matches = imported;
-      state.predictions = state.predictions.filter((item) => keepIds.has(item.matchId));
-      state.predictionSubmissions = state.predictionSubmissions.filter((item) => keepIds.has(item.matchId));
-      state.resultSubmissions = state.resultSubmissions.filter((item) => keepIds.has(item.matchId));
-      state.approvedResults = state.approvedResults.filter((item) => keepIds.has(item.matchId));
-      state.hiddenMissingTips = state.hiddenMissingTips.filter((key) => keepIds.has(key.split(":")[1]));
-    } else {
-      state.matches.push(...imported);
-    }
-    saveState();
+    const formData = new FormData();
+    formData.append("kind", "matches-csv");
+    formData.append("csvFile", file);
+    if (form.replaceMatches.checked) formData.append("replaceMatches", "1");
+    const data = await apiUpload(formData);
+    applyServerData(data);
     form.reset();
-    message.textContent = `${imported.length} meccs feltöltve.`;
+    setDashboardFlash("success", `${data.imported || 0} meccs feltöltve.`);
     render();
   } catch (error) {
-    message.textContent = error.message;
+    setFormMessage(form, "error", error.message);
+  }
+}
+
+async function importStateFromJson(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  clearFormMessage(form);
+  const file = form.stateFile.files[0];
+  if (!getUser()?.isAdmin) return;
+  if (!file) {
+    setFormMessage(form, "error", "Válassz JSON fájlt.");
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append("kind", "state-json");
+    formData.append("stateFile", file);
+    const data = await apiUpload(formData);
+    applyServerData(data);
+    form.reset();
+    setDashboardFlash("success", "Adatok feltöltve.");
+    render();
+  } catch (error) {
+    setFormMessage(form, "error", error.message);
   }
 }
 
@@ -1982,91 +1726,95 @@ function parseCsvDate(value) {
   return new Date(trimmed);
 }
 
-function saveEditedMatch(matchId) {
+async function saveEditedMatch(matchId) {
   const row = els.adminView.querySelector(`[data-match-edit="${matchId}"]`);
   const match = matchById(matchId);
   if (!row || !match || !getUser()?.isAdmin) return;
   const kickoff = new Date(row.querySelector('[name="kickoff"]').value);
-  if (Number.isNaN(kickoff.getTime())) return;
-  match.home = row.querySelector('[name="home"]').value.trim();
-  match.away = row.querySelector('[name="away"]').value.trim();
-  match.kickoff = kickoff.toISOString();
-  match.label = row.querySelector('[name="label"]').value.trim() || "Meccs";
-  match.group = row.querySelector('[name="group"]').value.trim();
-  match.stage = match.label.toLowerCase().includes("csoport") ? "group" : "knockout";
-  saveState();
-  render();
+  if (Number.isNaN(kickoff.getTime())) {
+    setDashboardFlash("error", "Hibás időpont.");
+    return;
+  }
+  try {
+    const data = await apiPost("save-match", {
+      matchId,
+      home: row.querySelector('[name="home"]').value.trim(),
+      away: row.querySelector('[name="away"]').value.trim(),
+      kickoff: kickoff.toISOString(),
+      label: row.querySelector('[name="label"]').value.trim() || "Meccs",
+      group: row.querySelector('[name="group"]').value.trim()
+    });
+    applyServerData(data);
+    setDashboardFlash("success", "A meccs módosításai elmentve.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
 async function resetUserPassword(userId) {
   const input = els.adminView.querySelector(`[data-reset-password="${userId}"]`);
   const user = userById(userId);
-  if (!input || !user || !getUser()?.isAdmin || !input.value) return;
-  await setUserPassword(user, input.value);
-  const updatedUser = userById(user.id);
-  if (updatedUser) updatedUser.mustChangePassword = true;
-  saveState();
-  render();
+  if (!input || !user || !getUser()?.isAdmin) return;
+  if (!input.value) {
+    setDashboardFlash("error", "Adj meg új jelszót.");
+    return;
+  }
+  try {
+    const data = await apiPost("admin-set-password", {
+      userId,
+      password: input.value
+    });
+    applyServerData(data);
+    setDashboardFlash("success", "A felhasználó jelszava visszaállítva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function setUserAdminRole(userId, isAdmin) {
+async function setUserAdminRole(userId, isAdmin) {
   const user = userById(userId);
   if (!user || !getUser()?.isAdmin) return;
   if (user.isSystemAdmin) return;
   if (user.id === currentUserId && !isAdmin) return;
-  user.isAdmin = isAdmin;
-  saveState();
-  render();
+  try {
+    const data = await apiPost("set-admin-role", { userId, isAdmin });
+    applyServerData(data);
+    setDashboardFlash("success", isAdmin ? "Az admin jog megadva." : "Az admin jog elvéve.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function deleteUser(userId) {
+async function deleteUser(userId) {
   if (!getUser()?.isAdmin || userId === currentUserId) return;
   if (userById(userId)?.isSystemAdmin) return;
-  state.users = state.users.filter((user) => user.id !== userId);
-  state.predictions = state.predictions.filter((prediction) => prediction.userId !== userId);
-  state.predictionSubmissions = state.predictionSubmissions.filter((submission) => submission.userId !== userId);
-  state.resultSubmissions = state.resultSubmissions.filter((submission) => submission.userId !== userId);
-  state.hiddenMissingTips = state.hiddenMissingTips.filter((key) => key.split(":")[0] !== userId);
-  saveState();
-  render();
+  try {
+    const data = await apiPost("delete-user", { userId });
+    applyServerData(data);
+    setDashboardFlash("success", "A felhasználó törölve.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function upsertApprovedResult({ matchId, homeGoals, awayGoals, qualifier, approvedBy }) {
-  state.approvedResults = state.approvedResults.filter((result) => result.matchId !== matchId);
-  state.approvedResults.push({
-    id: createId(),
-    matchId,
-    homeGoals,
-    awayGoals,
-    qualifier,
-    approvedAt: new Date().toISOString(),
-    approvedBy
-  });
-  state.resultSubmissions
-    .filter((item) => item.matchId === matchId && item.status === "pending")
-    .forEach((item) => {
-      item.status = "rejected";
-      item.reviewedAt = new Date().toISOString();
-    });
-}
-
-function approveResult(submissionId) {
+async function approveResult(submissionId) {
   const submission = state.resultSubmissions.find((item) => item.id === submissionId);
   if (!submission) return;
-  upsertApprovedResult({
-    matchId: submission.matchId,
-    homeGoals: submission.homeGoals,
-    awayGoals: submission.awayGoals,
-    qualifier: submission.qualifier,
-    approvedBy: currentUserId
-  });
-  submission.status = "approved";
-  submission.reviewedAt = new Date().toISOString();
-  saveState();
-  render();
+  try {
+    const data = await apiPost("approve-result", { submissionId });
+    applyServerData(data);
+    setDashboardFlash("success", "Az eredmény jóváhagyva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function updateApprovedResult(event) {
+async function updateApprovedResult(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const match = matchById(form.dataset.matchId);
@@ -2075,67 +1823,84 @@ function updateApprovedResult(event) {
 
   const homeGoals = Number(form.homeGoals.value);
   const awayGoals = Number(form.awayGoals.value);
-  existing.homeGoals = homeGoals;
-  existing.awayGoals = awayGoals;
-  existing.qualifier = match.stage === "knockout"
+  const qualifier = match.stage === "knockout"
     ? (homeGoals === awayGoals ? form.qualifier.value : impliedQualifier(match, homeGoals, awayGoals, ""))
     : "";
-  existing.approvedAt = new Date().toISOString();
-  existing.approvedBy = currentUserId;
-  saveState();
-  render();
+  try {
+    const data = await apiPost("update-approved-result", {
+      matchId: form.dataset.matchId,
+      homeGoals,
+      awayGoals,
+      qualifier
+    });
+    applyServerData(data);
+    setDashboardFlash("success", "A végleges eredmény módosítva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function rejectResult(submissionId) {
+async function rejectResult(submissionId) {
   const submission = state.resultSubmissions.find((item) => item.id === submissionId);
   if (!submission) return;
-  submission.status = "rejected";
-  submission.reviewedAt = new Date().toISOString();
-  saveState();
-  render();
-}
-
-function approvePredictionSubmission(submissionId) {
-  const submission = state.predictionSubmissions.find((item) => item.id === submissionId);
-  if (!submission || !getUser()?.isAdmin) return;
-  let prediction = state.predictions.find((item) => item.userId === submission.userId && item.matchId === submission.matchId);
-  if (!prediction) {
-    prediction = {
-      id: createId(),
-      userId: submission.userId,
-      matchId: submission.matchId,
-      createdAt: submission.submittedAt
-    };
-    state.predictions.push(prediction);
+  try {
+    const data = await apiPost("reject-result", { submissionId });
+    applyServerData(data);
+    setDashboardFlash("success", "Az eredménybeküldés elutasítva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
   }
-  prediction.homeGoals = submission.homeGoals;
-  prediction.awayGoals = submission.awayGoals;
-  prediction.qualifier = submission.qualifier;
-  prediction.updatedAt = new Date().toISOString();
-  prediction.approvedByAdmin = currentUserId;
-  submission.status = "approved";
-  submission.reviewedAt = new Date().toISOString();
-  saveState();
-  render();
 }
 
-function rejectPredictionSubmission(submissionId) {
+async function approvePredictionSubmission(submissionId) {
   const submission = state.predictionSubmissions.find((item) => item.id === submissionId);
   if (!submission || !getUser()?.isAdmin) return;
-  submission.status = "rejected";
-  submission.reviewedAt = new Date().toISOString();
-  saveState();
-  render();
+  try {
+    const data = await apiPost("approve-prediction-submission", { submissionId });
+    applyServerData(data);
+    setDashboardFlash("success", "A tippmódosítás jóváhagyva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
-function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "vb-tippliga-2026-adatok.json";
-  link.click();
-  URL.revokeObjectURL(url);
+async function rejectPredictionSubmission(submissionId) {
+  const submission = state.predictionSubmissions.find((item) => item.id === submissionId);
+  if (!submission || !getUser()?.isAdmin) return;
+  try {
+    const data = await apiPost("reject-prediction-submission", { submissionId });
+    applyServerData(data);
+    setDashboardFlash("success", "A tippmódosítás elutasítva.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
+}
+
+async function exportData() {
+  try {
+    const response = await fetch("/api/export.php", {
+      method: "POST",
+      credentials: "same-origin"
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Nem sikerült exportálni az adatokat.");
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "vb-tippliga-2026-adatok.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setDashboardFlash("success", "Az adatok exportálása elindult.");
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+  }
 }
 
 els.loginForm.addEventListener("submit", async (event) => {
@@ -2143,7 +1908,7 @@ els.loginForm.addEventListener("submit", async (event) => {
   try {
     const user = await loginUser(els.loginName.value, els.loginPassword.value);
     currentUserId = user.id;
-    localStorage.setItem(CURRENT_USER_KEY, user.id);
+    clearDashboardFlash();
     els.loginMessage.textContent = "";
     els.loginForm.reset();
     render();
@@ -2183,10 +1948,10 @@ els.passwordResetDialog.addEventListener("click", (event) => {
   }
 });
 
-els.passwordResetForm.addEventListener("submit", (event) => {
+els.passwordResetForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
-    requestPasswordReset(els.passwordResetName.value);
+    await requestPasswordReset(els.passwordResetName.value);
     els.loginMessage.textContent = "A jelszó-visszaállítási kérés elküldve az adminoknak.";
     els.passwordResetForm.reset();
     closePasswordResetDialog();
@@ -2214,11 +1979,3 @@ if (shouldUseServerStorage()) {
   checkMatchReminders();
 }
 setInterval(checkMatchReminders, 60 * 1000);
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // A PWA telepíthetőség HTTPS-en vagy localhoston működik; file:// alatt csendben kihagyjuk.
-    });
-  });
-}
