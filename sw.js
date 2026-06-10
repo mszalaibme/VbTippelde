@@ -1,4 +1,4 @@
-const CACHE_NAME = "vb-tippliga-2026-v13";
+const CACHE_NAME = "vb-tippliga-2026-v20";
 const APP_SHELL = [
   "/",
   "/index.html",

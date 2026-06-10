@@ -1,14 +1,98 @@
 const STORAGE_KEY = "vb-tippliga-2026-v4";
 const CURRENT_USER_KEY = "vb-tippliga-current-user-v4";
-const ADMIN_CODE = "admin2026";
+const REMINDER_KEY = "vb-tippliga-reminders-v1";
 const PASSWORD_ITERATIONS = 150000;
+const REMINDER_LEAD_MS = 60 * 60 * 1000;
+const REMINDER_WINDOW_MS = 5 * 60 * 1000;
 
 const seedMatches = [];
+
+const knockoutBracket = [
+  {
+    title: "32-es kör",
+    matches: [
+      { no: 73, home: "A csoport 2.", away: "B csoport 2." },
+      { no: 74, home: "E csoport 1.", away: "A/B/C/D/F csoport 3." },
+      { no: 75, home: "F csoport 1.", away: "C csoport 2." },
+      { no: 76, home: "C csoport 1.", away: "F csoport 2." },
+      { no: 77, home: "I csoport 1.", away: "C/D/F/G/H csoport 3." },
+      { no: 78, home: "E csoport 2.", away: "I csoport 2." },
+      { no: 79, home: "A csoport 1.", away: "C/E/F/H/I csoport 3." },
+      { no: 80, home: "L csoport 1.", away: "E/H/I/J/K csoport 3." },
+      { no: 81, home: "D csoport 1.", away: "B/E/F/I/J csoport 3." },
+      { no: 82, home: "G csoport 1.", away: "A/E/H/I/J csoport 3." },
+      { no: 83, home: "K csoport 2.", away: "L csoport 2." },
+      { no: 84, home: "H csoport 1.", away: "J csoport 2." },
+      { no: 85, home: "B csoport 1.", away: "E/F/G/I/J csoport 3." },
+      { no: 86, home: "J csoport 1.", away: "H csoport 2." },
+      { no: 87, home: "K csoport 1.", away: "D/E/I/J/L csoport 3." },
+      { no: 88, home: "D csoport 2.", away: "G csoport 2." }
+    ]
+  },
+  {
+    title: "Nyolcaddöntő",
+    matches: [
+      { no: 89, home: "73. meccs győztese", away: "75. meccs győztese" },
+      { no: 90, home: "74. meccs győztese", away: "77. meccs győztese" },
+      { no: 91, home: "76. meccs győztese", away: "78. meccs győztese" },
+      { no: 92, home: "79. meccs győztese", away: "80. meccs győztese" },
+      { no: 93, home: "83. meccs győztese", away: "84. meccs győztese" },
+      { no: 94, home: "81. meccs győztese", away: "82. meccs győztese" },
+      { no: 95, home: "86. meccs győztese", away: "88. meccs győztese" },
+      { no: 96, home: "85. meccs győztese", away: "87. meccs győztese" }
+    ]
+  },
+  {
+    title: "Negyeddöntő",
+    matches: [
+      { no: 97, home: "89. meccs győztese", away: "90. meccs győztese" },
+      { no: 98, home: "93. meccs győztese", away: "94. meccs győztese" },
+      { no: 99, home: "91. meccs győztese", away: "92. meccs győztese" },
+      { no: 100, home: "95. meccs győztese", away: "96. meccs győztese" }
+    ]
+  },
+  {
+    title: "Elődöntő",
+    matches: [
+      { no: 101, home: "97. meccs győztese", away: "98. meccs győztese" },
+      { no: 102, home: "99. meccs győztese", away: "100. meccs győztese" }
+    ]
+  },
+  {
+    title: "Döntők",
+    matches: [
+      { no: 103, home: "101. meccs vesztese", away: "102. meccs vesztese", note: "Bronzmeccs" },
+      { no: 104, home: "101. meccs győztese", away: "102. meccs győztese", note: "Döntő" }
+    ]
+  }
+];
 
 let state = loadState();
 let currentUserId = localStorage.getItem(CURRENT_USER_KEY);
 let serverSyncAvailable = false;
 let suppressServerSave = false;
+
+function hasWebCrypto() {
+  return Boolean(window.crypto?.subtle && window.crypto?.getRandomValues);
+}
+
+function createId() {
+  if (typeof window.crypto?.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  const random = new Uint8Array(16);
+  if (window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(random);
+  } else {
+    for (let index = 0; index < random.length; index += 1) {
+      random[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  random[6] = (random[6] & 0x0f) | 0x40;
+  random[8] = (random[8] & 0x3f) | 0x80;
+  const hex = Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 const els = {
   loginPanel: document.querySelector("#loginPanel"),
@@ -16,19 +100,19 @@ const els = {
   loginForm: document.querySelector("#loginForm"),
   loginName: document.querySelector("#loginName"),
   loginPassword: document.querySelector("#loginPassword"),
-  openRegisterBtn: document.querySelector("#openRegisterBtn"),
-  closeRegisterBtn: document.querySelector("#closeRegisterBtn"),
-  registerDialog: document.querySelector("#registerDialog"),
-  registerForm: document.querySelector("#registerForm"),
-  registerName: document.querySelector("#registerName"),
-  registerPassword: document.querySelector("#registerPassword"),
-  registerAdminCode: document.querySelector("#registerAdminCode"),
-  registerMessage: document.querySelector("#registerMessage"),
+  openPasswordResetBtn: document.querySelector("#openPasswordResetBtn"),
+  closePasswordResetBtn: document.querySelector("#closePasswordResetBtn"),
+  passwordResetDialog: document.querySelector("#passwordResetDialog"),
+  passwordResetForm: document.querySelector("#passwordResetForm"),
+  passwordResetName: document.querySelector("#passwordResetName"),
+  passwordResetMessage: document.querySelector("#passwordResetMessage"),
   loginMessage: document.querySelector("#loginMessage"),
   sessionBox: document.querySelector("#sessionBox"),
   welcomeTitle: document.querySelector("#welcomeTitle"),
   myScore: document.querySelector("#myScore"),
   pendingCount: document.querySelector("#pendingCount"),
+  passwordGate: document.querySelector("#passwordGate"),
+  tabs: document.querySelector("#mainTabs"),
   matchesView: document.querySelector("#matchesView"),
   standingsView: document.querySelector("#standingsView"),
   myTipsView: document.querySelector("#myTipsView"),
@@ -49,6 +133,7 @@ function loadState() {
     predictions: [],
     predictionSubmissions: [],
     resultSubmissions: [],
+    passwordResetRequests: [],
     hiddenMissingTips: [],
     approvedResults: []
   };
@@ -63,6 +148,7 @@ function normalizeState(value) {
     predictions: value.predictions || [],
     predictionSubmissions: value.predictionSubmissions || [],
     resultSubmissions: value.resultSubmissions || [],
+    passwordResetRequests: value.passwordResetRequests || [],
     hiddenMissingTips: value.hiddenMissingTips || [],
     approvedResults: value.approvedResults || []
   };
@@ -76,6 +162,9 @@ function normalizeUser(user) {
     passwordHash: "",
     passwordVersion: 2,
     passwordIterations: PASSWORD_ITERATIONS,
+    isAdmin: false,
+    isSystemAdmin: false,
+    mustChangePassword: false,
     ...normalized
   };
 }
@@ -115,6 +204,7 @@ async function loadServerState() {
     }
     suppressServerSave = false;
     render();
+    checkMatchReminders();
   } catch (error) {
     serverSyncAvailable = false;
   }
@@ -122,6 +212,14 @@ async function loadServerState() {
 
 function getUser() {
   return state.users.find((user) => user.id === currentUserId) || null;
+}
+
+function playerUsers() {
+  return state.users.filter((user) => !user.isSystemAdmin);
+}
+
+function canPlay(user) {
+  return Boolean(user && !user.isSystemAdmin && !user.mustChangePassword);
 }
 
 function bytesToBase64(bytes) {
@@ -137,6 +235,9 @@ function base64ToBytes(value) {
 }
 
 async function hashPassword(password, saltBase64) {
+  if (!hasWebCrypto()) {
+    throw new Error("A böngésző ezen a címen nem támogatja a biztonságos helyi jelszókezelést.");
+  }
   const salt = saltBase64 ? base64ToBytes(saltBase64) : crypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -161,7 +262,45 @@ async function hashPassword(password, saltBase64) {
   };
 }
 
+async function apiPost(path, payload) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "A szerver nem tudta feldolgozni a kérést.");
+  }
+  return data;
+}
+
+function syncStateFromServer(nextState) {
+  if (!nextState) return;
+  state = normalizeState(nextState);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  serverSyncAvailable = true;
+}
+
+async function ensureServerPasswordApi() {
+  if (serverSyncAvailable) return;
+  await loadServerState();
+  if (!serverSyncAvailable) {
+    throw new Error("Ezen a címen a jelszókezeléshez futó szerver kell.");
+  }
+}
+
 async function setUserPassword(user, password) {
+  if (!hasWebCrypto()) {
+    await ensureServerPasswordApi();
+    const data = await apiPost("/api/admin-set-password", {
+      adminId: currentUserId,
+      userId: user.id,
+      password
+    });
+    syncStateFromServer(data.state);
+    return;
+  }
   const result = await hashPassword(password);
   user.passwordSalt = result.salt;
   user.passwordHash = result.hash;
@@ -171,23 +310,42 @@ async function setUserPassword(user, password) {
 }
 
 async function verifyPassword(user, password) {
+  if (!hasWebCrypto()) {
+    return false;
+  }
   if (!user.passwordHash || !user.passwordSalt) return false;
   const result = await hashPassword(password, user.passwordSalt);
   return result.hash === user.passwordHash;
 }
 
-async function registerUser(name, password, isAdmin) {
+async function createUserByAdmin(name, password, isAdmin) {
+  const admin = getUser();
   const normalized = name.trim();
+  if (!admin?.isAdmin) throw new Error("Nincs jogosultság felhasználó létrehozásához.");
   if (!normalized || !password) throw new Error("Név és jelszó is kell.");
   if (state.users.some((item) => item.name.toLowerCase() === normalized.toLowerCase())) {
-    throw new Error("Ez a név már regisztrálva van.");
+    throw new Error("Ez a név már létezik.");
   }
   const user = {
-    id: crypto.randomUUID(),
+    id: createId(),
     name: normalized,
     isAdmin,
+    isSystemAdmin: false,
+    mustChangePassword: true,
+    createdByAdmin: admin.id,
     createdAt: new Date().toISOString()
   };
+  if (serverSyncAvailable || !hasWebCrypto()) {
+    await ensureServerPasswordApi();
+    const data = await apiPost("/api/admin-create-user", {
+      adminId: admin.id,
+      name: normalized,
+      password,
+      isAdmin
+    });
+    syncStateFromServer(data.state);
+    return data.user;
+  }
   await setUserPassword(user, password);
   state.users.push(user);
   saveState();
@@ -196,8 +354,14 @@ async function registerUser(name, password, isAdmin) {
 
 async function loginUser(name, password) {
   const normalized = name.trim();
+  if (!hasWebCrypto()) {
+    await ensureServerPasswordApi();
+    const data = await apiPost("/api/login", { name: normalized, password });
+    syncStateFromServer(data.state);
+    return data.user;
+  }
   const user = state.users.find((item) => item.name.toLowerCase() === normalized.toLowerCase());
-  if (!user) throw new Error("Nincs ilyen játékos. Regisztrálj előbb.");
+  if (!user) throw new Error("Nincs ilyen felhasználó.");
   if (!(await verifyPassword(user, password))) throw new Error("Hibás jelszó.");
   return user;
 }
@@ -281,9 +445,15 @@ function missingTipKey(userId, matchId) {
 function missingApprovedTipRows() {
   const hidden = new Set(state.hiddenMissingTips || []);
   return approvedRows()
-    .flatMap(({ match, result }) => state.users.map((user) => ({ match, result, user })))
+    .flatMap(({ match, result }) => playerUsers().map((user) => ({ match, result, user })))
     .filter(({ match, user }) => !state.predictions.some((prediction) => prediction.userId === user.id && prediction.matchId === match.id))
     .filter(({ match, user }) => !hidden.has(missingTipKey(user.id, match.id)));
+}
+
+function pendingPasswordResetRequests() {
+  return (state.passwordResetRequests || [])
+    .filter((request) => request.status === "pending")
+    .sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
 }
 
 function isLocked(match) {
@@ -334,7 +504,7 @@ function predictionScoreDetails(prediction) {
 }
 
 function getStandings() {
-  return state.users
+  return playerUsers()
     .map((user) => {
       const predictions = state.predictions.filter((prediction) => prediction.userId === user.id);
       const scored = predictions.map(predictionScoreDetails);
@@ -354,10 +524,17 @@ function render() {
   if (!user) return;
   els.welcomeTitle.textContent = `Szia, ${user.name}!`;
   document.querySelectorAll(".admin-only").forEach((item) => item.classList.toggle("hidden", !user.isAdmin));
-  els.myScore.textContent = getStandings().find((row) => row.user.id === user.id)?.points || 0;
+  document.querySelectorAll(".player-only").forEach((item) => item.classList.toggle("hidden", !canPlay(user)));
+  els.myScore.textContent = user.isSystemAdmin ? "-" : getStandings().find((row) => row.user.id === user.id)?.points || 0;
   const pendingBox = els.pendingCount.closest("div");
   pendingBox.classList.toggle("hidden", !user.isAdmin);
-  els.pendingCount.textContent = state.resultSubmissions.filter((item) => item.status === "pending").length;
+  els.pendingCount.textContent =
+    state.resultSubmissions.filter((item) => item.status === "pending").length +
+    state.predictionSubmissions.filter((item) => item.status === "pending").length +
+    pendingPasswordResetRequests().length;
+  renderPasswordGate(user);
+  updateVisibleTabs(user);
+  if (user.mustChangePassword) return;
   renderMatches();
   renderStandings();
   renderMyTips();
@@ -377,22 +554,168 @@ function renderSession(user) {
     <details class="password-menu">
       <summary>Jelszó</summary>
       <form id="sessionPasswordForm">
-        <input name="oldPassword" type="password" required placeholder="régi jelszó" />
-        <input name="newPassword" type="password" required placeholder="új jelszó" />
+        ${passwordFieldHtml("oldPassword", "Régi jelszó", "current-password")}
+        ${passwordFieldHtml("newPassword", "Új jelszó", "new-password")}
+        ${passwordFieldHtml("newPasswordConfirm", "Új jelszó még egyszer", "new-password")}
         <button class="password-save" type="submit">Jelszó mentése</button>
         <p class="form-message"></p>
       </form>
     </details>
+    <button type="button" id="notificationsBtn">${notificationsEnabled() ? "Értesítések: be" : "Értesítések"}</button>
     <button type="button" id="logoutBtn">Kilépés</button>`;
   document.querySelector("#sessionPasswordForm").addEventListener("submit", changeOwnPassword);
+  document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
   document.querySelector("#logoutBtn").addEventListener("click", () => {
     currentUserId = null;
     localStorage.removeItem(CURRENT_USER_KEY);
     render();
   });
+  setupPasswordToggles(document.querySelector("#sessionPasswordForm"));
+}
+
+function passwordFieldHtml(name, label, autocomplete = "off") {
+  return `
+    <label class="password-field">
+      <span>${label}</span>
+      <span class="password-input-wrap">
+        <input name="${name}" type="password" autocomplete="${autocomplete}" required />
+        <button class="password-toggle" type="button" data-toggle-password="${name}" aria-label="${label} megjelenítése">Mutat</button>
+      </span>
+    </label>`;
+}
+
+function setupPasswordToggles(root) {
+  root.querySelectorAll("[data-toggle-password]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = button.closest(".password-input-wrap")?.querySelector("input");
+      if (!input) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.textContent = show ? "Rejt" : "Mutat";
+      button.setAttribute("aria-label", show ? "Jelszó elrejtése" : "Jelszó megjelenítése");
+    });
+  });
+}
+
+function renderPasswordGate(user) {
+  if (!els.passwordGate) return;
+  els.passwordGate.classList.toggle("hidden", !user.mustChangePassword);
+  if (!user.mustChangePassword) {
+    els.passwordGate.innerHTML = "";
+    return;
+  }
+  els.passwordGate.innerHTML = `
+    <div class="password-gate-backdrop" role="presentation"></div>
+    <div class="modal-card password-gate-panel" role="dialog" aria-modal="true" aria-labelledby="forcedPasswordTitle">
+      <p class="section-kicker">Első belépés</p>
+      <h2 id="forcedPasswordTitle">Jelszó módosítása szükséges</h2>
+      <p class="muted">Az első belépés után új jelszót kell beállítanod. Addig nem tudod használni az oldalt.</p>
+      <form id="forcedPasswordForm" class="admin-prediction-form">
+        ${passwordFieldHtml("newPassword", "Új jelszó", "new-password")}
+        ${passwordFieldHtml("newPasswordConfirm", "Új jelszó még egyszer", "new-password")}
+        <button class="password-save" type="submit">Jelszó mentése</button>
+        <p class="form-message"></p>
+      </form>
+    </div>`;
+  els.passwordGate.querySelector("#forcedPasswordForm").addEventListener("submit", changeOwnPassword);
+  setupPasswordToggles(els.passwordGate);
+}
+
+function activateTab(viewName) {
+  const target = document.querySelector(`.tab[data-view="${viewName}"]:not(.hidden)`)
+    || document.querySelector(".tab:not(.hidden)");
+  document.querySelectorAll(".tab").forEach((item) => item.classList.toggle("active", item === target));
+  document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
+  if (target) {
+    document.querySelector(`#${target.dataset.view}View`)?.classList.add("active");
+  }
+}
+
+function updateVisibleTabs(user) {
+  if (!els.tabs) return;
+  els.tabs.classList.toggle("hidden", user.mustChangePassword);
+  document.querySelectorAll(".view").forEach((item) => item.classList.toggle("hidden", user.mustChangePassword));
+  if (user.mustChangePassword) return;
+
+  const active = document.querySelector(".tab.active");
+  if (!active || active.classList.contains("hidden")) {
+    activateTab(user.isSystemAdmin ? "admin" : "matches");
+  }
+}
+
+function notificationsEnabled() {
+  return localStorage.getItem(REMINDER_KEY) === "enabled" && "Notification" in window && Notification.permission === "granted";
+}
+
+async function enableMatchNotifications() {
+  if (!("Notification" in window)) {
+    alert("Ez a böngésző nem támogatja az értesítéseket.");
+    return;
+  }
+  const permission = Notification.permission === "granted"
+    ? "granted"
+    : await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Az értesítések nincsenek engedélyezve.");
+    return;
+  }
+  localStorage.setItem(REMINDER_KEY, "enabled");
+  renderSession(getUser());
+  checkMatchReminders();
+}
+
+function reminderSentKey(matchId) {
+  return `${REMINDER_KEY}:${matchId}`;
+}
+
+function reminderWasSent(matchId) {
+  return localStorage.getItem(reminderSentKey(matchId)) === "sent";
+}
+
+function markReminderSent(matchId) {
+  localStorage.setItem(reminderSentKey(matchId), "sent");
+}
+
+async function showMatchNotification(match) {
+  const title = "Meccs kezdődik 1 óra múlva";
+  const body = `${match.home} - ${match.away} · ${formatDate(match.kickoff)}`;
+  try {
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration?.showNotification) {
+        await registration.showNotification(title, {
+          body,
+          tag: `match-${match.id}`,
+          icon: "assets/icon-192.png",
+          badge: "assets/icon-192.png"
+        });
+        return;
+      }
+    }
+    new Notification(title, { body, tag: `match-${match.id}`, icon: "assets/icon-192.png" });
+  } catch (error) {
+    new Notification(title, { body });
+  }
+}
+
+function checkMatchReminders() {
+  if (!notificationsEnabled()) return;
+  const now = Date.now();
+  state.matches.forEach((match) => {
+    if (approvedFor(match.id) || reminderWasSent(match.id)) return;
+    const reminderAt = new Date(match.kickoff).getTime() - REMINDER_LEAD_MS;
+    const due = now >= reminderAt && now <= reminderAt + REMINDER_WINDOW_MS;
+    if (!due) return;
+    markReminderSent(match.id);
+    showMatchNotification(match);
+  });
 }
 
 function renderMatches() {
+  if (!canPlay(getUser())) {
+    els.matchesView.innerHTML = "";
+    return;
+  }
   const template = document.querySelector("#matchTemplate");
   els.matchesView.innerHTML = `<div class="match-grid"></div>`;
   const grid = els.matchesView.querySelector(".match-grid");
@@ -516,7 +839,7 @@ function savePrediction(event) {
   const user = getUser();
   const form = event.currentTarget;
   const match = matchById(form.dataset.matchId);
-  if (!user || !match || isLocked(match) || approvedFor(match.id)) return;
+  if (!canPlay(user) || !match || isLocked(match) || approvedFor(match.id)) return;
 
   const homeGoals = Number(form.homeGoals.value);
   const awayGoals = Number(form.awayGoals.value);
@@ -524,7 +847,7 @@ function savePrediction(event) {
 
   if (pendingFor(match.id)) {
     state.predictionSubmissions.push({
-      id: crypto.randomUUID(),
+      id: createId(),
       userId: user.id,
       matchId: match.id,
       homeGoals,
@@ -546,7 +869,7 @@ function savePrediction(event) {
     existing.updatedAt = new Date().toISOString();
   } else {
     state.predictions.push({
-      id: crypto.randomUUID(),
+      id: createId(),
       userId: user.id,
       matchId: match.id,
       homeGoals,
@@ -586,7 +909,7 @@ function submitResult(event) {
     return;
   }
   state.resultSubmissions.push({
-    id: crypto.randomUUID(),
+    id: createId(),
     userId: user.id,
     matchId: match.id,
     homeGoals,
@@ -659,15 +982,47 @@ async function changeOwnPassword(event) {
   const user = getUser();
   const message = form.querySelector(".form-message");
   if (!user) return;
-  if (!(await verifyPassword(user, form.oldPassword.value))) {
-    message.textContent = "A régi jelszó nem stimmel.";
+  if (form.newPassword.value !== form.newPasswordConfirm.value) {
+    message.textContent = "A két új jelszó nem egyezik.";
     return;
   }
+  if (!hasWebCrypto()) {
+    try {
+      await ensureServerPasswordApi();
+      const data = form.oldPassword
+        ? await apiPost("/api/change-password", {
+          userId: user.id,
+          oldPassword: form.oldPassword.value,
+          newPassword: form.newPassword.value
+        })
+        : await apiPost("/api/complete-first-password-change", {
+          userId: user.id,
+          newPassword: form.newPassword.value
+        });
+      syncStateFromServer(data.state);
+      form.reset();
+      message.textContent = "Jelszó módosítva.";
+      form.closest("details")?.removeAttribute("open");
+      render();
+    } catch (error) {
+      message.textContent = error.message;
+    }
+    return;
+  }
+  if (form.oldPassword) {
+    if (!(await verifyPassword(user, form.oldPassword.value))) {
+      message.textContent = "A régi jelszó nem stimmel.";
+      return;
+    }
+  }
   await setUserPassword(user, form.newPassword.value);
+  user.mustChangePassword = false;
+  user.passwordChangedAt = new Date().toISOString();
   saveState();
   form.reset();
   message.textContent = "Jelszó módosítva.";
   form.closest("details")?.removeAttribute("open");
+  render();
 }
 
 function renderTips() {
@@ -834,8 +1189,9 @@ function exactPredictorsHtml(match, result) {
       const actual = impliedQualifier(match, result.homeGoals, result.awayGoals, result.qualifier);
       return predicted === actual;
     })
-    .map((prediction) => userById(prediction.userId)?.name)
-    .filter(Boolean);
+    .map((prediction) => userById(prediction.userId))
+    .filter((user) => user && !user.isSystemAdmin)
+    .map((user) => user.name);
   return names.length
     ? `<p class="muted">Pontos találat: <strong>${names.join(", ")}</strong></p>`
     : `<p class="muted">Pontos találat: nincs</p>`;
@@ -927,6 +1283,66 @@ function groupStandingsHtml() {
     </div>`;
 }
 
+function normalizeBracketText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function plannedMatchFor(slot) {
+  const home = normalizeBracketText(slot.home);
+  const away = normalizeBracketText(slot.away);
+  return state.matches.find((match) => {
+    if (match.stage !== "knockout") return false;
+    const matchHome = normalizeBracketText(match.home);
+    const matchAway = normalizeBracketText(match.away);
+    return (matchHome === home && matchAway === away) || (matchHome === away && matchAway === home);
+  });
+}
+
+function bracketSlotHtml(slot) {
+  const match = plannedMatchFor(slot);
+  const resultInfo = match ? effectiveResultFor(match.id) : { result: null, status: "" };
+  const score = resultInfo.result ? `${resultInfo.result.homeGoals}-${resultInfo.result.awayGoals}` : "";
+  const qualifier = resultInfo.result?.qualifier ? `<span class="bracket-winner">Továbbjutó: ${resultInfo.result.qualifier}</span>` : "";
+  const status = resultInfo.status === "approved"
+    ? `<span class="pill">végleges</span>`
+    : resultInfo.status === "pending"
+      ? `<span class="pill warn">nem végleges</span>`
+      : "";
+  return `
+    <article class="bracket-match">
+      <div class="bracket-match-head">
+        <span class="bracket-no">${slot.no}. meccs</span>
+        ${slot.note ? `<span class="pill info">${slot.note}</span>` : ""}
+        ${status}
+      </div>
+      <div class="bracket-teams">
+        <span>${match?.home || slot.home}</span>
+        <strong>${score || "vs"}</strong>
+        <span>${match?.away || slot.away}</span>
+      </div>
+      ${qualifier}
+    </article>`;
+}
+
+function knockoutBracketHtml() {
+  return `
+    <div class="bracket-scroll">
+      <div class="bracket-grid">
+        ${knockoutBracket.map((round) => `
+          <section class="bracket-round">
+            <h4>${round.title}</h4>
+            ${round.matches.map(bracketSlotHtml).join("")}
+          </section>`).join("")}
+      </div>
+    </div>
+    <p class="muted bracket-note">A harmadik helyezetteknél a pontos csoportpárosítás attól függ, melyik nyolc harmadik helyezett jut tovább.</p>`;
+}
+
 function renderPlayed() {
   const isAdmin = Boolean(getUser()?.isAdmin);
   const rows = state.matches
@@ -938,6 +1354,10 @@ function renderPlayed() {
     <div class="panel">
       <h3>Csoportállás</h3>
       ${groupStandingsHtml()}
+    </div>
+    <div class="panel">
+      <h3>Kieséses ág</h3>
+      ${knockoutBracketHtml()}
     </div>
     <div class="panel">
       <h3>Eredmények</h3>
@@ -968,11 +1388,11 @@ function renderAdmin() {
 
   const pending = state.resultSubmissions.filter((item) => item.status === "pending");
   const pendingPredictions = state.predictionSubmissions.filter((item) => item.status === "pending");
+  const passwordRequests = pendingPasswordResetRequests();
   const missingTips = missingApprovedTipRows();
   els.adminView.innerHTML = `
     <div class="panel">
       <h3>Admin jóváhagyás</h3>
-      <p class="status-line">Az admin kód ebben a prototípusban: <strong>${ADMIN_CODE}</strong>. Éles használathoz szerveroldali belépés kell.</p>
       ${pending.map((item) => {
         const match = matchById(item.matchId);
         const user = userById(item.userId);
@@ -1010,6 +1430,25 @@ function renderAdmin() {
             </div>
           </div>`;
       }).join("") || `<p class="empty">Nincs jóváhagyásra váró tippmódosítás.</p>`}
+    </div>
+    <div class="panel">
+      <h3>Jelszó-visszaállítási kérések</h3>
+      ${passwordRequests.map((item) => {
+        const requestUser = userById(item.userId);
+        return `
+          <div class="approval-row password-reset-row">
+            <div>
+              <span class="pill warn">jelszó kérés</span>
+              <strong>${requestUser?.name || item.requestedName}</strong>
+              <span>${formatStamp(item.requestedAt)}</span>
+            </div>
+            <div class="approval-actions">
+              ${requestUser ? `<input data-reset-request-password="${item.id}" type="text" placeholder="új jelszó" />` : `<span class="muted">Nincs ilyen játékos</span>`}
+              ${requestUser ? `<button type="button" data-reset-request="${item.id}">Jelszó beállítása</button>` : ""}
+              <button class="secondary" type="button" data-close-reset-request="${item.id}">Lezárás</button>
+            </div>
+          </div>`;
+      }).join("") || `<p class="empty">Nincs jelszó-visszaállítási kérés.</p>`}
     </div>
     <div class="panel">
       <h3>Hiányzó tippek lezárt meccseken</h3>
@@ -1094,6 +1533,15 @@ function renderAdmin() {
     </div>
     <div class="panel">
       <h3>Játékosok kezelése</h3>
+      <form id="createUserForm" class="admin-prediction-form">
+        <div class="score-inputs">
+          <label>Felhasználónév <input name="name" autocomplete="off" required /></label>
+          <label>Ideiglenes jelszó <input name="password" type="text" required /></label>
+        </div>
+        <label class="checkbox-line"><input name="isAdmin" type="checkbox" /> Admin jog</label>
+        <button type="submit">Felhasználó létrehozása</button>
+        <p class="form-message"></p>
+      </form>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Név</th><th>Szerep</th><th>Új jelszó</th><th>Műveletek</th></tr></thead>
@@ -1101,15 +1549,16 @@ function renderAdmin() {
             ${state.users.map((item) => `
               <tr>
                 <td><strong>${item.name}</strong></td>
-                <td>${item.isAdmin ? "admin" : "játékos"}</td>
+                <td>${item.isSystemAdmin ? "alap admin" : item.isAdmin ? "admin játékos" : "játékos"}${item.mustChangePassword ? `<br><span class="pill warn">jelszócsere kell</span>` : ""}</td>
                 <td><input data-reset-password="${item.id}" type="text" placeholder="új jelszó" /></td>
                 <td>
                   <div class="result-actions">
-                    ${item.isAdmin
+                    ${item.isSystemAdmin ? ""
+                      : item.isAdmin
                       ? `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="0" ${item.id === currentUserId ? "disabled" : ""}>Admin elvétele</button>`
                       : `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="1">Admin adása</button>`}
                     <button type="button" class="secondary" data-reset-user="${item.id}">Jelszó visszaállítása</button>
-                    <button type="button" class="danger" data-delete-user="${item.id}" ${item.id === currentUserId ? "disabled" : ""}>Törlés</button>
+                    <button type="button" class="danger" data-delete-user="${item.id}" ${item.id === currentUserId || item.isSystemAdmin ? "disabled" : ""}>Törlés</button>
                   </div>
                 </td>
               </tr>`).join("") || `<tr><td colspan="4" class="empty">Nincs játékos.</td></tr>`}
@@ -1126,8 +1575,11 @@ function renderAdmin() {
   els.adminView.querySelectorAll("[data-reject]").forEach((button) => button.addEventListener("click", () => rejectResult(button.dataset.reject)));
   els.adminView.querySelectorAll("[data-approve-prediction]").forEach((button) => button.addEventListener("click", () => approvePredictionSubmission(button.dataset.approvePrediction)));
   els.adminView.querySelectorAll("[data-reject-prediction]").forEach((button) => button.addEventListener("click", () => rejectPredictionSubmission(button.dataset.rejectPrediction)));
+  els.adminView.querySelectorAll("[data-reset-request]").forEach((button) => button.addEventListener("click", () => resetPasswordFromRequest(button.dataset.resetRequest)));
+  els.adminView.querySelectorAll("[data-close-reset-request]").forEach((button) => button.addEventListener("click", () => closePasswordResetRequest(button.dataset.closeResetRequest)));
   els.adminView.querySelectorAll("[data-fill-missing-tip]").forEach((button) => button.addEventListener("click", () => fillMissingTip(button.dataset.fillMissingTip)));
   els.adminView.querySelectorAll("[data-hide-missing-tip]").forEach((button) => button.addEventListener("click", () => hideMissingTip(button.dataset.hideMissingTip)));
+  els.adminView.querySelector("#createUserForm").addEventListener("submit", createUserFromAdminForm);
   setupAdminPredictionForm();
   els.adminView.querySelector("#manualMatchForm").addEventListener("submit", addManualMatch);
   els.adminView.querySelector("#matchUploadForm").addEventListener("submit", importMatchesFromCsv);
@@ -1141,7 +1593,7 @@ function renderAdmin() {
 function setupAdminPredictionForm() {
   const form = els.adminView.querySelector("#adminPredictionForm");
   if (!form) return;
-  form.userId.innerHTML = state.users
+  form.userId.innerHTML = playerUsers()
     .map((user) => `<option value="${user.id}">${user.name}${user.isAdmin ? " · admin" : ""}</option>`)
     .join("");
   form.matchId.innerHTML = state.matches
@@ -1189,6 +1641,76 @@ function hideMissingTip(value) {
   render();
 }
 
+function requestPasswordReset(name) {
+  const requestedName = name.trim();
+  if (!requestedName) throw new Error("Add meg a felhasználóneved.");
+  const user = state.users.find((item) => item.name.toLowerCase() === requestedName.toLowerCase());
+  const existing = state.passwordResetRequests.find((item) => {
+    const sameKnownUser = user && item.userId === user.id;
+    const sameName = item.requestedName.toLowerCase() === requestedName.toLowerCase();
+    return item.status === "pending" && (sameKnownUser || sameName);
+  });
+  if (existing) return;
+  state.passwordResetRequests.push({
+    id: createId(),
+    userId: user?.id || "",
+    requestedName,
+    status: "pending",
+    requestedAt: new Date().toISOString()
+  });
+  saveState();
+}
+
+async function resetPasswordFromRequest(requestId) {
+  const request = state.passwordResetRequests.find((item) => item.id === requestId);
+  const input = els.adminView.querySelector(`[data-reset-request-password="${requestId}"]`);
+  const user = request ? userById(request.userId) : null;
+  if (!request || !input || !user || !getUser()?.isAdmin || !input.value) return;
+  if (!hasWebCrypto()) {
+    await ensureServerPasswordApi();
+    const data = await apiPost("/api/resolve-password-reset", {
+      adminId: currentUserId,
+      requestId,
+      password: input.value
+    });
+    syncStateFromServer(data.state);
+    render();
+    return;
+  }
+  await setUserPassword(user, input.value);
+  const updatedUser = userById(user.id);
+  if (updatedUser) updatedUser.mustChangePassword = true;
+  request.status = "resolved";
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = currentUserId;
+  saveState();
+  render();
+}
+
+function closePasswordResetRequest(requestId) {
+  const request = state.passwordResetRequests.find((item) => item.id === requestId);
+  if (!request || !getUser()?.isAdmin) return;
+  request.status = "closed";
+  request.reviewedAt = new Date().toISOString();
+  request.reviewedBy = currentUserId;
+  saveState();
+  render();
+}
+
+async function createUserFromAdminForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector(".form-message");
+  try {
+    await createUserByAdmin(form.name.value, form.password.value, form.isAdmin.checked);
+    form.reset();
+    message.textContent = "Felhasználó létrehozva. Első belépéskor jelszót kell módosítania.";
+    render();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
 function saveAdminPrediction(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1202,7 +1724,7 @@ function saveAdminPrediction(event) {
   let prediction = state.predictions.find((item) => item.userId === user.id && item.matchId === match.id);
   if (!prediction) {
     prediction = {
-      id: crypto.randomUUID(),
+      id: createId(),
       userId: user.id,
       matchId: match.id,
       createdAt: new Date().toISOString()
@@ -1254,7 +1776,7 @@ async function importMatchesFromCsv(event) {
   const file = form.csvFile.files[0];
   if (!file || !getUser()?.isAdmin) return;
   try {
-    const text = await file.text();
+    const text = await readCsvFileText(file);
     const rows = parseCsv(text);
     if (rows.length < 2) throw new Error("A CSV üres.");
     const headers = rows[0].map(normalizeHeader);
@@ -1278,6 +1800,17 @@ async function importMatchesFromCsv(event) {
     render();
   } catch (error) {
     message.textContent = error.message;
+  }
+}
+
+async function readCsvFileText(file) {
+  const buffer = await file.arrayBuffer();
+  const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+  if (!utf8.includes("\uFFFD")) return utf8.replace(/^\uFEFF/, "");
+  try {
+    return new TextDecoder("windows-1250").decode(buffer).replace(/^\uFEFF/, "");
+  } catch (error) {
+    return utf8.replace(/^\uFEFF/, "");
   }
 }
 
@@ -1379,6 +1912,8 @@ async function resetUserPassword(userId) {
   const user = userById(userId);
   if (!input || !user || !getUser()?.isAdmin || !input.value) return;
   await setUserPassword(user, input.value);
+  const updatedUser = userById(user.id);
+  if (updatedUser) updatedUser.mustChangePassword = true;
   saveState();
   render();
 }
@@ -1386,6 +1921,7 @@ async function resetUserPassword(userId) {
 function setUserAdminRole(userId, isAdmin) {
   const user = userById(userId);
   if (!user || !getUser()?.isAdmin) return;
+  if (user.isSystemAdmin) return;
   if (user.id === currentUserId && !isAdmin) return;
   user.isAdmin = isAdmin;
   saveState();
@@ -1394,6 +1930,7 @@ function setUserAdminRole(userId, isAdmin) {
 
 function deleteUser(userId) {
   if (!getUser()?.isAdmin || userId === currentUserId) return;
+  if (userById(userId)?.isSystemAdmin) return;
   state.users = state.users.filter((user) => user.id !== userId);
   state.predictions = state.predictions.filter((prediction) => prediction.userId !== userId);
   state.predictionSubmissions = state.predictionSubmissions.filter((submission) => submission.userId !== userId);
@@ -1406,7 +1943,7 @@ function deleteUser(userId) {
 function upsertApprovedResult({ matchId, homeGoals, awayGoals, qualifier, approvedBy }) {
   state.approvedResults = state.approvedResults.filter((result) => result.matchId !== matchId);
   state.approvedResults.push({
-    id: crypto.randomUUID(),
+    id: createId(),
     matchId,
     homeGoals,
     awayGoals,
@@ -1473,7 +2010,7 @@ function approvePredictionSubmission(submissionId) {
   let prediction = state.predictions.find((item) => item.userId === submission.userId && item.matchId === submission.matchId);
   if (!prediction) {
     prediction = {
-      id: crypto.randomUUID(),
+      id: createId(),
       userId: submission.userId,
       matchId: submission.matchId,
       createdAt: submission.submittedAt
@@ -1524,64 +2061,60 @@ els.loginForm.addEventListener("submit", async (event) => {
   }
 });
 
-function openRegisterDialog() {
-  els.registerForm.reset();
-  els.registerMessage.textContent = "";
-  if (typeof els.registerDialog.showModal === "function") {
-    els.registerDialog.showModal();
+function openPasswordResetDialog() {
+  els.passwordResetForm.reset();
+  els.passwordResetMessage.textContent = "";
+  if (typeof els.passwordResetDialog.showModal === "function") {
+    els.passwordResetDialog.showModal();
   } else {
-    els.registerDialog.setAttribute("open", "");
+    els.passwordResetDialog.setAttribute("open", "");
   }
-  els.registerName.focus();
+  els.passwordResetName.focus();
 }
 
-function closeRegisterDialog() {
-  if (typeof els.registerDialog.close === "function") {
-    els.registerDialog.close();
+function closePasswordResetDialog() {
+  if (typeof els.passwordResetDialog.close === "function") {
+    els.passwordResetDialog.close();
   } else {
-    els.registerDialog.removeAttribute("open");
+    els.passwordResetDialog.removeAttribute("open");
   }
 }
 
-els.openRegisterBtn.addEventListener("click", openRegisterDialog);
+els.openPasswordResetBtn.addEventListener("click", openPasswordResetDialog);
 
-els.closeRegisterBtn.addEventListener("click", () => {
-  closeRegisterDialog();
+els.closePasswordResetBtn.addEventListener("click", () => {
+  closePasswordResetDialog();
 });
 
-els.registerDialog.addEventListener("click", (event) => {
-  if (event.target === els.registerDialog) {
-    closeRegisterDialog();
+els.passwordResetDialog.addEventListener("click", (event) => {
+  if (event.target === els.passwordResetDialog) {
+    closePasswordResetDialog();
   }
 });
 
-els.registerForm.addEventListener("submit", async (event) => {
+els.passwordResetForm.addEventListener("submit", (event) => {
   event.preventDefault();
   try {
-    const isAdmin = els.registerAdminCode.value === ADMIN_CODE;
-    await registerUser(els.registerName.value, els.registerPassword.value, isAdmin);
-    els.loginName.value = els.registerName.value;
-    els.loginPassword.value = "";
-    els.loginMessage.textContent = "Regisztráció kész. Most jelentkezz be az új jelszóval.";
-    els.registerForm.reset();
-    closeRegisterDialog();
-    els.loginPassword.focus();
+    requestPasswordReset(els.passwordResetName.value);
+    els.loginMessage.textContent = "A jelszó-visszaállítási kérés elküldve az adminoknak.";
+    els.passwordResetForm.reset();
+    closePasswordResetDialog();
   } catch (error) {
-    els.registerMessage.textContent = error.message;
+    els.passwordResetMessage.textContent = error.message;
   }
 });
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
-    document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
-    tab.classList.add("active");
-    document.querySelector(`#${tab.dataset.view}View`).classList.add("active");
+    if (tab.classList.contains("hidden")) return;
+    activateTab(tab.dataset.view);
   });
 });
 
 render();
 loadServerState();
+setInterval(checkMatchReminders, 60 * 1000);
+checkMatchReminders();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {

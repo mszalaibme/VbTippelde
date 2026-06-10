@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png" />
-    <link rel="stylesheet" href="styles.css?v=13" />
+    <link rel="stylesheet" href="styles.css?v=20" />
   </head>
   <body>
     <div class="app-shell">
@@ -50,8 +50,8 @@
               <button type="submit" name="mode" value="login">Belépés</button>
             </div>
             <div class="register-entry">
-              <span>Még nincs fiókod?</span>
-              <button id="openRegisterBtn" class="secondary" type="button">Regisztráció</button>
+              <span>Van már fiókod, de nem emlékszel a jelszóra?</span>
+              <button id="openPasswordResetBtn" class="secondary" type="button">Elfelejtett jelszó</button>
             </div>
             <p id="loginMessage" class="form-message"></p>
           </form>
@@ -75,9 +75,11 @@
             </div>
           </div>
 
-          <div class="tabs" role="tablist" aria-label="Nézetek">
-            <button class="tab active" data-view="matches" type="button">Tippelek!</button>
-            <button class="tab" data-view="myTips" type="button">Korábbi Tippjeim</button>
+          <section id="passwordGate" class="password-gate hidden"></section>
+
+          <div id="mainTabs" class="tabs" role="tablist" aria-label="Nézetek">
+            <button class="tab active player-only" data-view="matches" type="button">Tippelek!</button>
+            <button class="tab player-only" data-view="myTips" type="button">Korábbi Tippjeim</button>
             <button class="tab" data-view="standings" type="button">Tabella</button>
             <button class="tab" data-view="played" type="button">Eredmények</button>
             <button class="tab" data-view="results" type="button">Eredmény feltöltése</button>
@@ -125,32 +127,25 @@
       </article>
     </template>
 
-    <dialog id="registerDialog" class="modal">
-      <form id="registerForm" class="modal-card">
+    <dialog id="passwordResetDialog" class="modal">
+      <form id="passwordResetForm" class="modal-card">
         <div>
-          <p class="section-kicker">Regisztráció</p>
-          <h2>Új játékos</h2>
+          <p class="section-kicker">Jelszó</p>
+          <h2>Új jelszó kérése</h2>
         </div>
         <label>
-          Név
-          <input id="registerName" type="text" autocomplete="name" required placeholder="pl. Máté" />
+          Felhasználónév
+          <input id="passwordResetName" type="text" autocomplete="username" required placeholder="pl. Máté" />
         </label>
-        <label>
-          Jelszó
-          <input id="registerPassword" type="password" autocomplete="new-password" required placeholder="gagyi jelszó" />
-        </label>
-        <label>
-          Admin kód
-          <input id="registerAdminCode" type="password" placeholder="opcionális" />
-        </label>
+        <p class="muted">A kérés az adminoknak fog megjelenni. Ők állítanak be neked új jelszót.</p>
         <div class="login-actions">
-          <button type="submit">Regisztráció</button>
-          <button id="closeRegisterBtn" class="secondary" type="button">Mégse</button>
+          <button type="submit">Kérés elküldése</button>
+          <button id="closePasswordResetBtn" class="secondary" type="button">Mégse</button>
         </div>
-        <p id="registerMessage" class="form-message"></p>
+        <p id="passwordResetMessage" class="form-message"></p>
       </form>
     </dialog>
 
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=20"></script>
   </body>
 </html>

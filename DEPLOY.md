@@ -134,6 +134,31 @@ Plaintext `password` mezot a kliens mentés elott torol, es a szerver is kidobja
 
 Fontos: ez csaladi/barati hasznalatra mar sokkal jobb, mint a sima szoveges jelszo, de tovabbra sem banki szintu auth rendszer. Ha nagyobb kornek nyitod meg, erdemes kesobb szerveroldali session kezelest, HTTPS-t, rate limitet es SQLite/adatbazis alapu tarolast hasznalni.
 
+## Felhasznalok letrehozasa
+
+A nyilvanos regisztracio ki van kapcsolva. A szerver automatikusan letrehoz egy alap rendszeradmin felhasznalot, ha meg nem letezik:
+
+```text
+username: admin
+jelszo: admin8520
+```
+
+Ez az alap admin nem jatekos: nem szerepel a tabellaban, nem tippel, es csak adminisztracios feladatokra valo. Az admin feluleten lehet uj felhasznalokat letrehozni ideiglenes jelszoval, es ott lehet nekik admin jogot adni vagy elvenni.
+
+Az admin altal letrehozott felhasznaloknak az elso belepes utan kotelezo jelszot modositaniuk, mielott barmit csinalhatnanak az appban. Admin jelszo-visszaallitas utan ugyanigy kotelezo lesz az uj jelszo megvaltoztatasa.
+
+## Elfelejtett jelszo
+
+Az app nem kuld automatikus emailt. A felhasznalo a belepesi oldalon tud jelszo-visszaallitast kerni, ez az admin feluleten jelenik meg. Az admin ott uj jelszot allithat be, vagy lezarhatja a kerest.
+
+Az uj jelszo ilyenkor is csak hash-elve kerul mentésre.
+
+## Meccs ertesitesek
+
+Az app tud bongeszo/PWA ertesitest kerni a meccsek kezdete elott 1 oraval. Ez a bongeszo Notification API-jat es a service workert hasznalja.
+
+Fontos korlat: ez nem teljes erteku szerveroldali push rendszer. Akkor mukodik megbizhatoan, ha a felhasznalo engedelyezte az ertesiteseket es az appot idonkent megnyitja / telepitett PWA-kent hasznalja. Valodi hatter-pushhoz kesobb kulon push subscription, VAPID kulcsok es szerveroldali push kuldes kellene.
+
 ## CSV import
 
 CSV import mukodik a bongeszoben es a Node szerveres verzioban is. A `csoport` oszlop opcionális, tehat csoportnev nelkuli CSV export is feltoltheto.
