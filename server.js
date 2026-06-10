@@ -10,8 +10,8 @@ const DATA_DIR = path.join(ROOT, "data");
 const STATE_FILE = path.join(DATA_DIR, "state.json");
 const PASSWORD_ITERATIONS = 150000;
 const SYSTEM_ADMIN_ID = "__system_admin__";
-const BOOTSTRAP_ADMIN_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "admin";
-const BOOTSTRAP_ADMIN_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD || "admin8520";
+const BOOTSTRAP_ADMIN_NAME = "admin";
+const BOOTSTRAP_ADMIN_PASSWORD = "admin8520";
 
 const EMPTY_STATE = {
   users: [],
@@ -268,7 +268,7 @@ async function handleApi(req, res) {
     const state = readState();
     const user = state.users.find((item) => item.id === body.userId);
     if (isSystemAdminUser(user)) {
-      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      sendJson(res, 403, { error: "Az alap admin jelszava be van építve az appba." });
       return true;
     }
     if (!user || !verifyPassword(user, body.oldPassword)) {
@@ -305,7 +305,7 @@ async function handleApi(req, res) {
     const admin = state.users.find((item) => item.id === body.adminId);
     const user = state.users.find((item) => item.id === body.userId);
     if (isSystemAdminUser(user)) {
-      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      sendJson(res, 403, { error: "Az alap admin jelszava be van építve az appba." });
       return true;
     }
     if (!admin?.isAdmin || !user || !body.password) {
@@ -326,7 +326,7 @@ async function handleApi(req, res) {
     const request = state.passwordResetRequests.find((item) => item.id === body.requestId);
     const user = request ? state.users.find((item) => item.id === request.userId) : null;
     if (isSystemAdminUser(user)) {
-      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      sendJson(res, 403, { error: "Az alap admin jelszava be van építve az appba." });
       return true;
     }
     if (!admin?.isAdmin || !request || !user || !body.password) {

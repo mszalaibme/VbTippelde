@@ -136,20 +136,11 @@ Fontos: ez csaladi/barati hasznalatra mar sokkal jobb, mint a sima szoveges jels
 
 ## Felhasznalok letrehozasa
 
-A nyilvanos regisztracio ki van kapcsolva. Az alap rendszeradmin a szerver kodjaba epitett virtualis felhasznalo, nem a `state.json` resze. Emiatt teljes adatnullazas utan is be lehet lepni vele:
-
-```text
-username: admin
-jelszo: admin8520
-```
+A nyilvanos regisztracio ki van kapcsolva. Az alap rendszeradmin a szerver kodjaba epitett virtualis felhasznalo, nem a `state.json` resze. Emiatt teljes adatnullazas utan is van admin belepesi lehetoseg.
 
 Ez az alap admin nem jatekos: nem szerepel a tabellaban, nem tippel, es csak adminisztracios feladatokra valo. Az admin feluleten lehet uj felhasznalokat letrehozni ideiglenes jelszoval, es ott lehet nekik admin jogot adni vagy elvenni.
 
-Az alap admin jelszava a szerver konfiguraciojabol jon. VPS-en felulirhato kornyezeti valtozoval:
-
-```bash
-BOOTSTRAP_ADMIN_PASSWORD='eros-egyedi-jelszo' PORT=3000 node server.js
-```
+Az alap admin fixen a kodba van epitve, nem kornyezeti valtozobol es nem a `state.json`-bol jon. Ez azert van igy, hogy teljesen ures `data` mappa es hianyzo `state.json` mellett is legyen mivel belepni.
 
 Az admin altal letrehozott felhasznaloknak az elso belepes utan kotelezo jelszot modositaniuk, mielott barmit csinalhatnanak az appban. Admin jelszo-visszaallitas utan ugyanigy kotelezo lesz az uj jelszo megvaltoztatasa.
 

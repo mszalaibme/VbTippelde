@@ -4,6 +4,9 @@ const REMINDER_KEY = "vb-tippliga-reminders-v1";
 const PASSWORD_ITERATIONS = 150000;
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
+const SYSTEM_ADMIN_ID = "__system_admin__";
+const SYSTEM_ADMIN_NAME = "admin";
+const SYSTEM_ADMIN_PASSWORD = "admin8520";
 
 const seedMatches = [];
 
@@ -137,13 +140,13 @@ function loadState() {
     hiddenMissingTips: [],
     approvedResults: []
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(initial)));
   return initial;
 }
 
 function normalizeState(value) {
   return {
-    users: (value.users || []).map(normalizeUser),
+    users: (value.users || []).filter((user) => !isSystemAdminRecord(user)).map(normalizeUser),
     matches: (value.matches || seedMatches).map((match) => ({ group: "", ...match })),
     predictions: value.predictions || [],
     predictionSubmissions: value.predictionSubmissions || [],
@@ -152,6 +155,29 @@ function normalizeState(value) {
     hiddenMissingTips: value.hiddenMissingTips || [],
     approvedResults: value.approvedResults || []
   };
+}
+
+function isSystemAdminRecord(user) {
+  return Boolean(
+    user?.isSystemAdmin ||
+    user?.id === SYSTEM_ADMIN_ID ||
+    user?.name?.toLowerCase() === SYSTEM_ADMIN_NAME
+  );
+}
+
+function systemAdminUser() {
+  return {
+    id: SYSTEM_ADMIN_ID,
+    name: SYSTEM_ADMIN_NAME,
+    isAdmin: true,
+    isSystemAdmin: true,
+    mustChangePassword: false,
+    createdAt: "system"
+  };
+}
+
+function isSystemAdminLogin(name, password) {
+  return name.trim().toLowerCase() === SYSTEM_ADMIN_NAME && password === SYSTEM_ADMIN_PASSWORD;
 }
 
 function normalizeUser(user) {
@@ -171,7 +197,7 @@ function normalizeUser(user) {
 
 function saveState() {
   stripPlainPasswords(state);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
   if (serverSyncAvailable && !suppressServerSave) {
     fetch("/api/state", {
       method: "PUT",
@@ -189,6 +215,18 @@ function stripPlainPasswords(value) {
   });
 }
 
+function sanitizedStateForStorage(value) {
+  const clean = {
+    ...value,
+    users: (value.users || []).filter((user) => !isSystemAdminRecord(user)).map((user) => {
+      const normalized = { ...user };
+      delete normalized.password;
+      return normalized;
+    })
+  };
+  return clean;
+}
+
 async function loadServerState() {
   try {
     const response = await fetch("/api/state", { cache: "no-store" });
@@ -197,8 +235,8 @@ async function loadServerState() {
     serverSyncAvailable = true;
     suppressServerSave = true;
     state = remoteState;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    if (currentUserId && !state.users.some((user) => user.id === currentUserId)) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
+    if (currentUserId && currentUserId !== SYSTEM_ADMIN_ID && !state.users.some((user) => user.id === currentUserId)) {
       currentUserId = null;
       localStorage.removeItem(CURRENT_USER_KEY);
     }
@@ -211,6 +249,7 @@ async function loadServerState() {
 }
 
 function getUser() {
+  if (currentUserId === SYSTEM_ADMIN_ID) return systemAdminUser();
   return state.users.find((user) => user.id === currentUserId) || null;
 }
 
@@ -278,7 +317,7 @@ async function apiPost(path, payload) {
 function syncStateFromServer(nextState) {
   if (!nextState) return;
   state = normalizeState(nextState);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
   serverSyncAvailable = true;
 }
 
@@ -354,6 +393,9 @@ async function createUserByAdmin(name, password, isAdmin) {
 
 async function loginUser(name, password) {
   const normalized = name.trim();
+  if (isSystemAdminLogin(normalized, password)) {
+    return systemAdminUser();
+  }
   if (!hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/login", { name: normalized, password });
@@ -551,7 +593,7 @@ function renderSession(user) {
   }
   els.sessionBox.innerHTML = `
     <span>${user.name}${user.isAdmin ? " · admin" : ""}</span>
-    <details class="password-menu">
+    ${user.isSystemAdmin ? "" : `<details class="password-menu">
       <summary>Jelszó</summary>
       <form id="sessionPasswordForm">
         ${passwordFieldHtml("oldPassword", "Régi jelszó", "current-password")}
@@ -560,17 +602,18 @@ function renderSession(user) {
         <button class="password-save" type="submit">Jelszó mentése</button>
         <p class="form-message"></p>
       </form>
-    </details>
+    </details>`}
     <button type="button" id="notificationsBtn">${notificationsEnabled() ? "Értesítések: be" : "Értesítések"}</button>
     <button type="button" id="logoutBtn">Kilépés</button>`;
-  document.querySelector("#sessionPasswordForm").addEventListener("submit", changeOwnPassword);
+  document.querySelector("#sessionPasswordForm")?.addEventListener("submit", changeOwnPassword);
   document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
   document.querySelector("#logoutBtn").addEventListener("click", () => {
     currentUserId = null;
     localStorage.removeItem(CURRENT_USER_KEY);
     render();
   });
-  setupPasswordToggles(document.querySelector("#sessionPasswordForm"));
+  const passwordForm = document.querySelector("#sessionPasswordForm");
+  if (passwordForm) setupPasswordToggles(passwordForm);
 }
 
 function passwordFieldHtml(name, label, autocomplete = "off") {
