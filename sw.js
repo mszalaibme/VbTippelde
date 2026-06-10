@@ -1,4 +1,4 @@
-const CACHE_NAME = "vb-tippliga-2026-v26";
+const CACHE_NAME = "vb-tippliga-2026-v27";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -35,9 +35,17 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
+        if (!response || !response.ok || response.type === "opaque") {
+          return response;
+        }
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
+      }).catch(() => {
+        if (event.request.mode === "navigate") {
+          return caches.match("/index.html");
+        }
+        return Response.error();
       });
     })
   );
