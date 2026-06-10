@@ -1,5 +1,6 @@
 # Runtime data
 #/data/
+/data/state.json
 /backups/
 *.log
 
