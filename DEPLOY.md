@@ -15,16 +15,18 @@
    PORT=3000 node server.js
    ```
 
-3. Caddy pelda konfiguracio, ha mindent a Node szerver szolgaltat:
+3. Caddy konfiguracio
+
+   Ehhez az apphoz az ajanlott megoldas az, hogy Caddy minden kerest a Node szerverre proxyz. A `server.js` kiszolgalja a statikus fajlokat es az API-t is, igy kisebb a hibalehetoseg:
 
    ```caddy
-   tippliga.example.com {
+   tippelde.szlncz.hu {
      encode gzip
      reverse_proxy 127.0.0.1:3000
    }
    ```
 
-   Ha Caddy statikusan szolgaltatja ki a fajlokat, akkor az API kéréseket kulon kell a Node szerverre proxyzni. Pelda:
+   Ha Caddy statikusan szolgaltatja ki a fajlokat, akkor az API kereseket kulon kell a Node szerverre proxyzni. Pelda:
 
    ```caddy
    tippelde.szlncz.hu {
@@ -42,6 +44,32 @@
    ```
 
    Fontos: ha a belepesnel `404` jon a `/api/login` keresre, akkor Caddy nem proxyzza az API utvonalat a Node szerverre, vagy a Node szerver nem azon a porton fut. Ilyenkor a statikus oldal betolt, de a felhasznalok, tippek es eredmenyek nem lesznek globalisan mentve.
+
+4. Gyors VPS diagnosztika
+
+   Ellenorizd, hogy a Node app kozvetlenul valaszol-e:
+
+   ```bash
+   curl -i http://127.0.0.1:3000/api/state
+   ```
+
+   Ha ez nem ad `200 OK` valaszt, akkor a Node app nem fut, rossz porton fut, vagy nem abbol a mappabol indult, ahol a `server.js` van.
+
+   Ellenorizd a publikus API-t is:
+
+   ```bash
+   curl -i https://tippelde.szlncz.hu/api/state
+   ```
+
+   Ha a lokalis `127.0.0.1:3000` valaszol, de a publikus URL `404`, akkor Caddy konfiguracios gond van: a `/api/*` keresek nem mennek at a Node szerverre.
+
+   Belepes teszt:
+
+   ```bash
+   curl -i -X POST https://tippelde.szlncz.hu/api/login \
+     -H "content-type: application/json" \
+     --data '{"name":"<admin-nev>","password":"<admin-jelszo>"}'
+   ```
 
 ## Adattarolas
 
