@@ -9,6 +9,7 @@ const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const STATE_FILE = path.join(DATA_DIR, "state.json");
 const PASSWORD_ITERATIONS = 150000;
+const SYSTEM_ADMIN_ID = "__system_admin__";
 const BOOTSTRAP_ADMIN_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "admin";
 const BOOTSTRAP_ADMIN_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD || "admin8520";
 
@@ -98,14 +99,15 @@ function serveStatic(req, res) {
 function readState() {
   ensureStateFile();
   const state = { ...EMPTY_STATE, ...JSON.parse(fs.readFileSync(STATE_FILE, "utf8")) };
-  return ensureBootstrapAdmin(state);
+  return withSystemAdmin(state);
 }
 
 function writeState(state) {
   ensureStateFile();
   const safeState = { ...EMPTY_STATE, ...state };
-  ensureBootstrapAdmin(safeState);
-  safeState.users = (safeState.users || []).map((user) => {
+  safeState.users = (safeState.users || [])
+    .filter((user) => !isSystemAdminUser(user))
+    .map((user) => {
     const clean = { ...user };
     delete clean.password;
     return clean;
@@ -129,32 +131,32 @@ function setPassword(user, password) {
   delete user.password;
 }
 
-function ensureBootstrapAdmin(state) {
+function systemAdminUser() {
+  return {
+    id: SYSTEM_ADMIN_ID,
+    name: BOOTSTRAP_ADMIN_NAME,
+    isAdmin: true,
+    isSystemAdmin: true,
+    mustChangePassword: false,
+    createdAt: "system"
+  };
+}
+
+function isSystemAdminUser(user) {
+  return user?.isSystemAdmin || user?.id === SYSTEM_ADMIN_ID || String(user?.name || "").toLowerCase() === BOOTSTRAP_ADMIN_NAME.toLowerCase();
+}
+
+function withSystemAdmin(state) {
   state.users = state.users || [];
-  let admin = findUserByName(state, BOOTSTRAP_ADMIN_NAME);
-  if (!admin) {
-    admin = {
-      id: crypto.randomUUID(),
-      name: BOOTSTRAP_ADMIN_NAME,
-      isAdmin: true,
-      isSystemAdmin: true,
-      mustChangePassword: false,
-      createdAt: new Date().toISOString()
-    };
-    setPassword(admin, BOOTSTRAP_ADMIN_PASSWORD);
-    state.users.unshift(admin);
-    return state;
-  }
-  admin.isAdmin = true;
-  admin.isSystemAdmin = true;
-  admin.mustChangePassword = false;
-  if (!admin.passwordHash || !admin.passwordSalt) {
-    setPassword(admin, BOOTSTRAP_ADMIN_PASSWORD);
-  }
+  state.users = state.users.filter((user) => !isSystemAdminUser(user));
+  state.users.unshift(systemAdminUser());
   return state;
 }
 
 function verifyPassword(user, password) {
+  if (isSystemAdminUser(user)) {
+    return password === BOOTSTRAP_ADMIN_PASSWORD;
+  }
   if (!user?.passwordHash || !user?.passwordSalt) return false;
   const candidate = hashPassword(password, user.passwordSalt).passwordHash;
   const stored = Buffer.from(user.passwordHash, "base64");
@@ -265,6 +267,10 @@ async function handleApi(req, res) {
     const body = await readJsonBody(req);
     const state = readState();
     const user = state.users.find((item) => item.id === body.userId);
+    if (isSystemAdminUser(user)) {
+      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      return true;
+    }
     if (!user || !verifyPassword(user, body.oldPassword)) {
       sendJson(res, 401, { error: "A régi jelszó nem stimmel." });
       return true;
@@ -298,6 +304,10 @@ async function handleApi(req, res) {
     const state = readState();
     const admin = state.users.find((item) => item.id === body.adminId);
     const user = state.users.find((item) => item.id === body.userId);
+    if (isSystemAdminUser(user)) {
+      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      return true;
+    }
     if (!admin?.isAdmin || !user || !body.password) {
       sendJson(res, 403, { error: "Nincs jogosultság a jelszó visszaállításához." });
       return true;
@@ -315,6 +325,10 @@ async function handleApi(req, res) {
     const admin = state.users.find((item) => item.id === body.adminId);
     const request = state.passwordResetRequests.find((item) => item.id === body.requestId);
     const user = request ? state.users.find((item) => item.id === request.userId) : null;
+    if (isSystemAdminUser(user)) {
+      sendJson(res, 403, { error: "Az alap admin jelszava a szerver konfigurációjából jön." });
+      return true;
+    }
     if (!admin?.isAdmin || !request || !user || !body.password) {
       sendJson(res, 403, { error: "Nincs jogosultság a jelszó visszaállításához." });
       return true;
