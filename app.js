@@ -318,6 +318,12 @@ async function apiPost(path, payload) {
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Az API végpont nem található. A Caddy valószínűleg nem proxyzza a /api kéréseket a Node szerverre.");
+    }
+    if (response.status === 405) {
+      throw new Error("Az API végpont nem fogadja ezt a kérést. Ellenőrizd a Caddy proxyzást és a futó Node szervert.");
+    }
     throw new Error(data.error || `A szerver nem tudta feldolgozni a kérést. (${response.status})`);
   }
   return data;

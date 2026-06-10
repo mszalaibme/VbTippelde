@@ -15,7 +15,7 @@
    PORT=3000 node server.js
    ```
 
-3. Caddy pelda konfiguracio:
+3. Caddy pelda konfiguracio, ha mindent a Node szerver szolgaltat:
 
    ```caddy
    tippliga.example.com {
@@ -23,6 +23,25 @@
      reverse_proxy 127.0.0.1:3000
    }
    ```
+
+   Ha Caddy statikusan szolgaltatja ki a fajlokat, akkor az API kéréseket kulon kell a Node szerverre proxyzni. Pelda:
+
+   ```caddy
+   tippelde.szlncz.hu {
+     encode gzip
+     root * /opt/vb-tippelde
+
+     handle /api/* {
+       reverse_proxy 127.0.0.1:3000
+     }
+
+     handle {
+       file_server
+     }
+   }
+   ```
+
+   Fontos: ha a belepesnel `404` jon a `/api/login` keresre, akkor Caddy nem proxyzza az API utvonalat a Node szerverre, vagy a Node szerver nem azon a porton fut. Ilyenkor a statikus oldal betolt, de a felhasznalok, tippek es eredmenyek nem lesznek globalisan mentve.
 
 ## Adattarolas
 
