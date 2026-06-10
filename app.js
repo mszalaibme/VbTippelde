@@ -306,14 +306,19 @@ async function hashPassword(password, saltBase64) {
 }
 
 async function apiPost(path, payload) {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (error) {
+    throw new Error("Nem sikerült elérni a szervert. Frissítsd az oldalt, vagy ellenőrizd, hogy fut-e az API.");
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || "A szerver nem tudta feldolgozni a kérést.");
+    throw new Error(data.error || `A szerver nem tudta feldolgozni a kérést. (${response.status})`);
   }
   return data;
 }
@@ -329,12 +334,21 @@ async function ensureServerPasswordApi() {
   if (serverSyncAvailable) return;
   await loadServerState();
   if (!serverSyncAvailable) {
-    throw new Error("Ezen a címen a jelszókezeléshez futó szerver kell.");
+    throw new Error("Nem sikerült kapcsolódni az API-hoz. Frissítsd az oldalt, vagy ellenőrizd a szervert.");
   }
 }
 
 async function setUserPassword(user, password) {
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
+  if (shouldUseServerStorage()) {
+    const data = await apiPost("/api/admin-set-password", {
+      adminId: currentUserId,
+      userId: user.id,
+      password
+    });
+    syncStateFromServer(data.state);
+    return;
+  }
+  if (!hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/admin-set-password", {
       adminId: currentUserId,
@@ -378,7 +392,17 @@ async function createUserByAdmin(name, password, isAdmin) {
     createdByAdmin: admin.id,
     createdAt: new Date().toISOString()
   };
-  if (shouldUseServerStorage() || serverSyncAvailable || !hasWebCrypto()) {
+  if (shouldUseServerStorage()) {
+    const data = await apiPost("/api/admin-create-user", {
+      adminId: admin.id,
+      name: normalized,
+      password,
+      isAdmin
+    });
+    syncStateFromServer(data.state);
+    return data.user;
+  }
+  if (serverSyncAvailable || !hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/admin-create-user", {
       adminId: admin.id,
@@ -397,7 +421,12 @@ async function createUserByAdmin(name, password, isAdmin) {
 
 async function loginUser(name, password) {
   const normalized = name.trim();
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
+  if (shouldUseServerStorage()) {
+    const data = await apiPost("/api/login", { name: normalized, password });
+    syncStateFromServer(data.state);
+    return data.user;
+  }
+  if (!hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/login", { name: normalized, password });
     syncStateFromServer(data.state);
@@ -1035,7 +1064,6 @@ async function changeOwnPassword(event) {
   }
   if (shouldUseServerStorage() || !hasWebCrypto()) {
     try {
-      await ensureServerPasswordApi();
       const data = form.oldPassword
         ? await apiPost("/api/change-password", {
           userId: user.id,
@@ -1713,7 +1741,17 @@ async function resetPasswordFromRequest(requestId) {
   const input = els.adminView.querySelector(`[data-reset-request-password="${requestId}"]`);
   const user = request ? userById(request.userId) : null;
   if (!request || !input || !user || !getUser()?.isAdmin || !input.value) return;
-  if (shouldUseServerStorage() || !hasWebCrypto()) {
+  if (shouldUseServerStorage()) {
+    const data = await apiPost("/api/resolve-password-reset", {
+      adminId: currentUserId,
+      requestId,
+      password: input.value
+    });
+    syncStateFromServer(data.state);
+    render();
+    return;
+  }
+  if (!hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/resolve-password-reset", {
       adminId: currentUserId,
