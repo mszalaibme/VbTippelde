@@ -79,6 +79,10 @@ function hasWebCrypto() {
   return Boolean(window.crypto?.subtle && window.crypto?.getRandomValues);
 }
 
+function shouldUseServerStorage() {
+  return window.location.protocol === "http:" || window.location.protocol === "https:";
+}
+
 function createId() {
   if (typeof window.crypto?.randomUUID === "function") {
     return window.crypto.randomUUID();
@@ -198,7 +202,7 @@ function normalizeUser(user) {
 function saveState() {
   stripPlainPasswords(state);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
-  if (serverSyncAvailable && !suppressServerSave) {
+  if ((shouldUseServerStorage() || serverSyncAvailable) && !suppressServerSave) {
     fetch("/api/state", {
       method: "PUT",
       headers: { "content-type": "application/json" },
@@ -274,7 +278,7 @@ function base64ToBytes(value) {
 }
 
 async function hashPassword(password, saltBase64) {
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     throw new Error("A böngésző ezen a címen nem támogatja a biztonságos helyi jelszókezelést.");
   }
   const salt = saltBase64 ? base64ToBytes(saltBase64) : crypto.getRandomValues(new Uint8Array(16));
@@ -330,7 +334,7 @@ async function ensureServerPasswordApi() {
 }
 
 async function setUserPassword(user, password) {
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/admin-set-password", {
       adminId: currentUserId,
@@ -349,7 +353,7 @@ async function setUserPassword(user, password) {
 }
 
 async function verifyPassword(user, password) {
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     return false;
   }
   if (!user.passwordHash || !user.passwordSalt) return false;
@@ -374,7 +378,7 @@ async function createUserByAdmin(name, password, isAdmin) {
     createdByAdmin: admin.id,
     createdAt: new Date().toISOString()
   };
-  if (serverSyncAvailable || !hasWebCrypto()) {
+  if (shouldUseServerStorage() || serverSyncAvailable || !hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/admin-create-user", {
       adminId: admin.id,
@@ -393,14 +397,14 @@ async function createUserByAdmin(name, password, isAdmin) {
 
 async function loginUser(name, password) {
   const normalized = name.trim();
-  if (isSystemAdminLogin(normalized, password)) {
-    return systemAdminUser();
-  }
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/login", { name: normalized, password });
     syncStateFromServer(data.state);
     return data.user;
+  }
+  if (isSystemAdminLogin(normalized, password)) {
+    return systemAdminUser();
   }
   const user = state.users.find((item) => item.name.toLowerCase() === normalized.toLowerCase());
   if (!user) throw new Error("Nincs ilyen felhasználó.");
@@ -1029,7 +1033,7 @@ async function changeOwnPassword(event) {
     message.textContent = "A két új jelszó nem egyezik.";
     return;
   }
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     try {
       await ensureServerPasswordApi();
       const data = form.oldPassword
@@ -1709,7 +1713,7 @@ async function resetPasswordFromRequest(requestId) {
   const input = els.adminView.querySelector(`[data-reset-request-password="${requestId}"]`);
   const user = request ? userById(request.userId) : null;
   if (!request || !input || !user || !getUser()?.isAdmin || !input.value) return;
-  if (!hasWebCrypto()) {
+  if (shouldUseServerStorage() || !hasWebCrypto()) {
     await ensureServerPasswordApi();
     const data = await apiPost("/api/resolve-password-reset", {
       adminId: currentUserId,
@@ -2154,10 +2158,18 @@ document.querySelectorAll(".tab").forEach((tab) => {
   });
 });
 
-render();
-loadServerState();
+if (shouldUseServerStorage()) {
+  state = normalizeState({});
+  loadServerState().finally(() => {
+    render();
+    checkMatchReminders();
+  });
+} else {
+  render();
+  loadServerState();
+  checkMatchReminders();
+}
 setInterval(checkMatchReminders, 60 * 1000);
-checkMatchReminders();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
