@@ -88,6 +88,46 @@ Ebben van minden fontos adat: felhasznalok, jelszo hash-ek, meccsek, tippek, ere
 
 Fontos: jelenleg nincs beépített automatikus backup a kodban. Az automatikus mentest kulon kell futtatni a VPS-en, peldaul `cron` segitsegevel.
 
+Fontos: a `data/` mappa direkt ki van zarva gitbol (`.gitignore`). Az eles `state.json` ne a repobol frissuljon, mert ez futasideju adat. A percenkenti `git pull` a kodot frissitse, az eles adat pedig maradjon a VPS-en a `data/state.json` fajlban. Ha a `state.json` bekerulne gitbe, egy pull felulirhatna az eles adatokat, vagy merge konfliktust okozhatna.
+
+## State fajl jogosultsagok
+
+Ha felhasznalo letrehozasnal ilyen hibat latsz:
+
+```text
+EACCES: permission denied, open '/var/www/.../VbTippelde/data/state.json'
+```
+
+akkor a Node folyamat nem tudja irni a `state.json` fajlt. Ilyenkor a `data` mappat annak a Linux usernek kell adni, aki a Node appot futtatja.
+
+Ellenorizd, milyen user futtatja a Node szervert:
+
+```bash
+ps aux | grep '[n]ode server.js'
+```
+
+Ha peldaul `www-data` futtatja:
+
+```bash
+sudo mkdir -p /var/www/mcsontho/VbTippelde/data
+sudo chown -R www-data:www-data /var/www/mcsontho/VbTippelde/data
+sudo chmod 750 /var/www/mcsontho/VbTippelde/data
+sudo chmod 640 /var/www/mcsontho/VbTippelde/data/state.json
+```
+
+Ha mas user futtatja, csereld a `www-data:www-data` reszt arra a userre. Ha a `state.json` meg nem letezik, a `chmod 640 .../state.json` parancs csak az elso inditas utan kell.
+
+Ha systemd service futtatja az appot, a service fajlban levo `User=` erteke legyen a fajl tulajdonosa. Pelda:
+
+```ini
+[Service]
+WorkingDirectory=/var/www/mcsontho/VbTippelde
+ExecStart=/usr/bin/node server.js
+Environment=PORT=3000
+User=www-data
+Restart=always
+```
+
 ## Backup javaslat
 
 Hozz letre kulon backup mappat:

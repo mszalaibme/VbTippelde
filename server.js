@@ -21,6 +21,7 @@ const EMPTY_STATE = {
   predictionSubmissions: [],
   passwordResetRequests: [],
   hiddenMissingTips: [],
+  teamAssignments: {},
   approvedResults: []
 };
 
@@ -201,6 +202,7 @@ async function handleApi(req, res) {
       predictionSubmissions: parsed.predictionSubmissions || [],
       passwordResetRequests: parsed.passwordResetRequests || [],
       hiddenMissingTips: parsed.hiddenMissingTips || [],
+      teamAssignments: parsed.teamAssignments || {},
       resultSubmissions: parsed.resultSubmissions || [],
       approvedResults: parsed.approvedResults || []
     };
