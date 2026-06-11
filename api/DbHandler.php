@@ -15,7 +15,14 @@ final class DbHandler
         'predictionSubmissions' => [],
         'passwordResetRequests' => [],
         'hiddenMissingTips' => [],
+        'teamAssignments' => [],
         'approvedResults' => [],
+    ];
+
+    private array $teamCompetitionTeams = [
+        ['id' => 'team-a', 'name' => 'A csapat', 'color' => '#2f855a', 'soft' => '#e4f4ea'],
+        ['id' => 'team-b', 'name' => 'B csapat', 'color' => '#c26a22', 'soft' => '#fff0dc'],
+        ['id' => 'team-c', 'name' => 'C csapat', 'color' => '#6b46c1', 'soft' => '#f0eaff'],
     ];
 
     private array $defaultAdminConfig = [
@@ -268,6 +275,7 @@ final class DbHandler
                 ],
             ],
             'knockoutBracket' => $this->knockoutConfig(),
+            'teamCompetitionTeams' => $this->teamCompetitionTeams,
         ];
     }
 
@@ -329,6 +337,33 @@ final class DbHandler
             fn ($match): array => array_merge(['group' => ''], is_array($match) ? $match : []),
             $normalized['matches']
         ));
+        $normalized['teamAssignments'] = $this->normalizeTeamAssignments($normalized['teamAssignments'], $normalized['users']);
+
+        return $normalized;
+    }
+
+    private function normalizeTeamAssignments(array $assignments, array $users): array
+    {
+        $validTeamIds = array_column($this->teamCompetitionTeams, 'id');
+        $validUserIds = array_map(
+            fn (array $user): string => (string) ($user['id'] ?? ''),
+            array_filter($users, fn (array $user): bool => !$this->isSystemAdminUser($user))
+        );
+        $validUserSet = array_fill_keys(array_filter($validUserIds), true);
+        $validTeamSet = array_fill_keys($validTeamIds, true);
+        $normalized = [];
+
+        foreach ($assignments as $userId => $teamId) {
+            $userId = (string) $userId;
+            $teamId = (string) $teamId;
+            if ($userId === '' || $teamId === '' || !isset($validTeamSet[$teamId])) {
+                continue;
+            }
+            if (!isset($validUserSet[$userId])) {
+                continue;
+            }
+            $normalized[$userId] = $teamId;
+        }
 
         return $normalized;
     }

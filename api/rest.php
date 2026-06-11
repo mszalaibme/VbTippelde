@@ -299,6 +299,20 @@ function removeUserData(array &$state, string $userId): void
         $state['hiddenMissingTips'],
         fn ($key): bool => explode(':', (string) $key)[0] !== $userId
     ));
+    unset($state['teamAssignments'][$userId]);
+}
+
+function teamCompetitionTeamIds(DbHandler $db): array
+{
+    return array_map(
+        fn (array $team): string => (string) ($team['id'] ?? ''),
+        $db->publicConfig()['teamCompetitionTeams'] ?? []
+    );
+}
+
+function isKnownTeamId(DbHandler $db, string $teamId): bool
+{
+    return $teamId !== '' && in_array($teamId, teamCompetitionTeamIds($db), true);
 }
 
 try {
@@ -800,6 +814,28 @@ try {
                     failRequest(403, 'Saját magadtól nem veheted el az admin jogot.');
                 }
                 $state['users'][$index]['isAdmin'] = $isAdmin;
+                return $state;
+            });
+            sendJson(200, stateResponse($state, $db));
+        }
+
+        case 'set-team-assignment': {
+            $state = $db->update(function (array $state) use ($payload, $db): array {
+                requireAdmin($state, $db);
+                $userId = (string) ($payload['userId'] ?? '');
+                $teamId = (string) ($payload['teamId'] ?? '');
+                $index = findIndexById($state['users'], $userId);
+                if ($index < 0 || $db->isSystemAdminUser($state['users'][$index])) {
+                    failRequest(404, 'Nincs ilyen beosztható játékos.');
+                }
+                if ($teamId !== '' && !isKnownTeamId($db, $teamId)) {
+                    failRequest(400, 'Ismeretlen csapat.');
+                }
+                if ($teamId === '') {
+                    unset($state['teamAssignments'][$userId]);
+                } else {
+                    $state['teamAssignments'][$userId] = $teamId;
+                }
                 return $state;
             });
             sendJson(200, stateResponse($state, $db));

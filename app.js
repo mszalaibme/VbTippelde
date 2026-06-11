@@ -12,7 +12,12 @@ const defaultConfig = {
       name: "admin"
     }
   },
-  knockoutBracket: []
+  knockoutBracket: [],
+  teamCompetitionTeams: [
+    { id: "team-a", name: "A csapat", color: "#2f855a", soft: "#e4f4ea" },
+    { id: "team-b", name: "B csapat", color: "#c26a22", soft: "#fff0dc" },
+    { id: "team-c", name: "C csapat", color: "#6b46c1", soft: "#f0eaff" }
+  ]
 };
 
 let state = loadState();
@@ -21,6 +26,7 @@ let currentUserId = null;
 let serverSyncAvailable = true;
 let suppressServerSave = false;
 let dashboardFlash = null;
+let standingsMode = "players";
 
 function shouldUseServerStorage() {
   return true;
@@ -69,7 +75,10 @@ function normalizeConfig(value) {
       passwordIterations: value?.admin?.passwordIterations || defaultConfig.admin.passwordIterations,
       systemAdmin
     },
-    knockoutBracket: Array.isArray(value?.knockoutBracket) ? value.knockoutBracket : defaultConfig.knockoutBracket
+    knockoutBracket: Array.isArray(value?.knockoutBracket) ? value.knockoutBracket : defaultConfig.knockoutBracket,
+    teamCompetitionTeams: Array.isArray(value?.teamCompetitionTeams) && value.teamCompetitionTeams.length
+      ? value.teamCompetitionTeams
+      : defaultConfig.teamCompetitionTeams
   };
 }
 
@@ -82,6 +91,7 @@ function normalizeState(value) {
     resultSubmissions: value.resultSubmissions || [],
     passwordResetRequests: value.passwordResetRequests || [],
     hiddenMissingTips: value.hiddenMissingTips || [],
+    teamAssignments: value.teamAssignments || {},
     approvedResults: value.approvedResults || []
   };
 }
@@ -327,6 +337,12 @@ function pendingPredictionFor(userId, matchId) {
     .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] || null;
 }
 
+function predictionSummary(prediction) {
+  if (!prediction) return "";
+  const qualifier = prediction.qualifier ? `, továbbjutó: ${prediction.qualifier}` : "";
+  return `${prediction.homeGoals}-${prediction.awayGoals}${qualifier}`;
+}
+
 function missingTipKey(userId, matchId) {
   return `${userId}:${matchId}`;
 }
@@ -374,7 +390,10 @@ function predictionScoreDetails(prediction) {
   const match = matchById(prediction.matchId);
   const { result, status } = effectiveResultFor(prediction.matchId);
   if (!match || !result) return { points: 0, status: "none", exact: false };
+  return scorePredictionAgainstResult(prediction, match, result, status);
+}
 
+function scorePredictionAgainstResult(prediction, match, result, status) {
   let points = 0;
   const exact = Number(prediction.homeGoals) === Number(result.homeGoals) && Number(prediction.awayGoals) === Number(result.awayGoals);
   if (exact) {
@@ -390,6 +409,98 @@ function predictionScoreDetails(prediction) {
   }
 
   return { points, status, exact };
+}
+
+function teamCompetitionTeams() {
+  return config.teamCompetitionTeams || defaultConfig.teamCompetitionTeams;
+}
+
+function teamById(teamId) {
+  return teamCompetitionTeams().find((team) => team.id === teamId) || null;
+}
+
+function userTeamId(userId) {
+  return state.teamAssignments?.[userId] || "";
+}
+
+function groupLabel(group) {
+  const value = String(group || "").trim();
+  if (!value) return "Csoport nincs megadva";
+  return value.toLowerCase().includes("csoport") ? value : `${value} csoport`;
+}
+
+function getTeamStandings() {
+  const playerRows = getStandings();
+  const rowByUser = new Map(playerRows.map((row) => [row.user.id, row]));
+  const teams = teamCompetitionTeams().map((team) => {
+    const members = playerUsers().filter((user) => userTeamId(user.id) === team.id);
+    const memberRows = members.map((user) => rowByUser.get(user.id) || { user, points: 0, predictions: 0, exact: 0, provisional: false });
+    return {
+      team,
+      members,
+      memberRows,
+      points: memberRows.reduce((sum, row) => sum + row.points, 0),
+      exact: memberRows.reduce((sum, row) => sum + row.exact, 0),
+      predictions: memberRows.reduce((sum, row) => sum + row.predictions, 0),
+      provisional: memberRows.some((row) => row.provisional),
+      leaderStreak: 0,
+      isLeader: false,
+      isTiedLeader: false
+    };
+  });
+  const leaderInfo = getTeamLeaderInfo(playerRows);
+  teams.forEach((row) => {
+    row.leaderStreak = leaderInfo.leaderId === row.team.id ? leaderInfo.streak : 0;
+    row.isLeader = leaderInfo.leaderId === row.team.id;
+    row.isTiedLeader = leaderInfo.tiedLeaderIds.includes(row.team.id);
+  });
+  return teams.sort((a, b) => b.points - a.points || b.exact - a.exact || a.team.name.localeCompare(b.team.name, "hu"));
+}
+
+function getTeamLeaderInfo(playerRows = getStandings()) {
+  const teams = teamCompetitionTeams();
+  const assignments = state.teamAssignments || {};
+  const scores = Object.fromEntries(teams.map((team) => [team.id, 0]));
+  const resultRows = state.matches
+    .map((match) => ({ match, effective: effectiveResultFor(match.id) }))
+    .filter((row) => row.effective.result)
+    .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff));
+  let leaderId = "";
+  let streak = 0;
+
+  resultRows.forEach(({ match, effective }) => {
+    state.predictions
+      .filter((prediction) => prediction.matchId === match.id)
+      .forEach((prediction) => {
+        const teamId = assignments[prediction.userId];
+        if (!teamId || !(teamId in scores)) return;
+        scores[teamId] += scorePredictionAgainstResult(prediction, match, effective.result, effective.status).points;
+      });
+
+    const max = Math.max(...Object.values(scores));
+    const leaders = teams.filter((team) => scores[team.id] === max && max > 0).map((team) => team.id);
+    const nextLeaderId = leaders.length === 1 ? leaders[0] : "";
+    if (!nextLeaderId) {
+      leaderId = "";
+      streak = 0;
+    } else if (nextLeaderId === leaderId) {
+      streak += 1;
+    } else {
+      leaderId = nextLeaderId;
+      streak = 1;
+    }
+  });
+
+  const rowByUser = new Map(playerRows.map((row) => [row.user.id, row]));
+  const currentRows = teams.map((team) => ({
+    id: team.id,
+    points: playerUsers()
+      .filter((user) => assignments[user.id] === team.id)
+      .reduce((sum, user) => sum + (rowByUser.get(user.id)?.points || 0), 0)
+  }));
+  const max = Math.max(...currentRows.map((row) => row.points));
+  const tiedLeaderIds = currentRows.filter((row) => row.points === max && max > 0).map((row) => row.id);
+  return { leaderId: tiedLeaderIds.length === 1 ? leaderId : "", tiedLeaderIds, streak };
 }
 
 function getStandings() {
@@ -613,12 +724,21 @@ function renderMatches() {
       const locked = isLocked(match);
 
       node.querySelector(".stage").textContent = match.label;
+      if (match.stage === "group") {
+        node.querySelector(".stage").insertAdjacentHTML("afterend", `<span class="pill group-pill">${groupLabel(match.group)}</span>`);
+      }
       node.querySelector(".kickoff").textContent = formatDate(match.kickoff);
       node.querySelector(".home").textContent = match.home;
       node.querySelector(".away").textContent = match.away;
       node.querySelector(".status-line").innerHTML = statusHtml(match, prediction, resultInfo, locked);
       if (pendingPrediction) {
         node.querySelector(".status-line").insertAdjacentHTML("beforeend", `<span class="pill warn">Tippmódosítás jóváhagyásra vár</span>`);
+        node.querySelector(".status-line").insertAdjacentHTML("afterend", `
+          <div class="pending-tip-box">
+            <strong>Leadott módosításod:</strong>
+            <span>${predictionSummary(pendingPrediction)}</span>
+            <small>Ez még nem számít bele a pontjaidba, amíg admin jóvá nem hagyja.</small>
+          </div>`);
       }
       node.querySelector(".history-grid").innerHTML = historyHtml(match);
 
@@ -652,9 +772,8 @@ function statusHtml(match, prediction, resultInfo, locked) {
   const result = resultInfo.result;
   chunks.push(`<span class="pill ${locked ? "warn" : "info"}">${locked ? "Tippelés lezárva" : "Nyitott meccs"}</span>`);
   if (prediction) {
-    const qualifier = prediction.qualifier ? `, továbbjutó: ${prediction.qualifier}` : "";
     const score = predictionScoreDetails(prediction);
-    chunks.push(`<span>Mentett tipped: <strong>${prediction.homeGoals}-${prediction.awayGoals}</strong>${qualifier}</span>`);
+    chunks.push(`<span>Mentett tipped: <strong>${predictionSummary(prediction)}</strong></span>`);
     if (result && resultInfo.status === "approved") chunks.push(`<span class="pill">Pont: ${score.points}</span>`);
     if (getUser()?.isAdmin) chunks.push(`<span>Időbélyeg: ${formatStamp(prediction.updatedAt)}</span>`);
   } else {
@@ -664,8 +783,7 @@ function statusHtml(match, prediction, resultInfo, locked) {
     if (resultInfo.status === "pending") {
       chunks.push(`<span class="pill warn">Eredmény hozzáadva, jóváhagyásra vár</span>`);
     } else {
-      const qualifier = result.qualifier ? `, továbbjutó: ${result.qualifier}` : "";
-      chunks.push(`<span class="pill">Jóváhagyott: ${result.homeGoals}-${result.awayGoals}${qualifier}</span>`);
+      chunks.push(`<span class="pill">Jóváhagyott: ${predictionSummary(result)}</span>`);
     }
   }
   return chunks.join("");
@@ -767,8 +885,28 @@ async function submitResult(event) {
 }
 
 function renderStandings() {
-  const rows = getStandings();
+  const content = standingsMode === "teams" ? teamStandingsHtml() : playerStandingsHtml();
   els.standingsView.innerHTML = `
+    <div class="standings-switch" role="tablist" aria-label="Tabella nézetek">
+      <button type="button" class="${standingsMode === "players" ? "active" : ""}" data-standings-mode="players">
+        <span>Sima tabella</span>
+      </button>
+      <button type="button" class="${standingsMode === "teams" ? "active" : ""}" data-standings-mode="teams">
+        <span>Csapatverseny tabella</span>
+      </button>
+    </div>
+    ${content}`;
+  els.standingsView.querySelectorAll("[data-standings-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      standingsMode = button.dataset.standingsMode;
+      renderStandings();
+    });
+  });
+}
+
+function playerStandingsHtml() {
+  const rows = getStandings();
+  return `
     <div class="table-wrap">
       <table>
         <thead><tr><th>#</th><th>Név</th><th>Pont</th><th>Telitalálat</th><th>Tippek száma</th></tr></thead>
@@ -779,28 +917,68 @@ function renderStandings() {
     </div>`;
 }
 
+function teamStandingsHtml() {
+  const rows = getTeamStandings();
+  return `
+    <div class="team-standings-grid">
+      ${rows.map((row, index) => `
+        <article class="team-standing-card ${row.isLeader ? "leader" : ""}" style="--team-color: ${row.team.color}; --team-soft: ${row.team.soft};">
+          <div class="team-standing-head">
+            <span class="team-rank">#${index + 1}</span>
+            <div>
+              <h3>${row.team.name}</h3>
+              <p>${row.members.length ? row.members.map((member) => member.name).join(", ") : "Még nincs játékos ebben a csapatban."}</p>
+            </div>
+            <strong>${row.points}</strong>
+          </div>
+          <div class="team-standing-meta">
+            <span>${row.exact} telitalálat</span>
+            ${
+              row.isLeader
+                ? `<span class="leader-streak">${row.leaderStreak} meccse vezet</span>`
+                : row.isTiedLeader
+                ? `<span class="leader-streak">holtversenyben első</span>`
+                : ""
+            }
+            ${row.provisional ? `<span class="pill warn">nem végleges</span>` : ""}
+          </div>
+          <div class="team-members">
+            ${row.memberRows.map((member) => `
+              <div>
+                <span>${member.user.name}</span>
+                <strong>${member.points} pont</strong>
+              </div>`).join("") || `<p class="empty small">Nincs beosztott játékos.</p>`}
+          </div>
+        </article>`).join("")}
+    </div>`;
+}
+
 function resultText(matchId) {
   const { result, status } = effectiveResultFor(matchId);
   if (!result) return { html: `<span class="muted">Még nincs eredmény</span>`, status };
-  const qualifier = result.qualifier ? `<br><small>Továbbjutó: ${result.qualifier}</small>` : "";
   const label = status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : "";
   return {
-    html: `<strong>${result.homeGoals}-${result.awayGoals}</strong>${qualifier}${label}`,
+    html: `<strong>${predictionSummary(result)}</strong>${label}`,
     status
   };
 }
 
 function renderMyTips() {
   const user = getUser();
-  const rows = state.predictions
-    .filter((prediction) => prediction.userId === user?.id)
-    .slice()
-    .sort((a, b) => new Date(matchById(a.matchId).kickoff) - new Date(matchById(b.matchId).kickoff))
-    .map((prediction) => {
-      const match = matchById(prediction.matchId);
-      const score = predictionScoreDetails(prediction);
-      return { prediction, match, score, result: resultText(prediction.matchId) };
-    });
+  const matchIds = new Set([
+    ...state.predictions.filter((prediction) => prediction.userId === user?.id).map((prediction) => prediction.matchId),
+    ...state.predictionSubmissions.filter((item) => item.userId === user?.id && item.status === "pending").map((item) => item.matchId)
+  ]);
+  const rows = Array.from(matchIds)
+    .map((matchId) => {
+      const match = matchById(matchId);
+      const prediction = state.predictions.find((item) => item.userId === user?.id && item.matchId === matchId) || null;
+      const pending = user ? pendingPredictionFor(user.id, matchId) : null;
+      const score = prediction ? predictionScoreDetails(prediction) : { points: 0, status: "none" };
+      return { prediction, pending, match, score, result: resultText(matchId) };
+    })
+    .filter((row) => row.match)
+    .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff));
 
   els.myTipsView.innerHTML = `
     <div class="table-wrap">
@@ -810,7 +988,10 @@ function renderMyTips() {
           ${rows.map((row) => `
             <tr>
               <td><strong>${row.match.home} - ${row.match.away}</strong><br><small>${formatDate(row.match.kickoff)}</small></td>
-              <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>Továbbjutó: ${row.prediction.qualifier}</small>` : ""}</td>
+              <td>
+                ${row.prediction ? predictionSummary(row.prediction) : `<span class="muted">Nincs jóváhagyott tipp</span>`}
+                ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span><br><small class="muted">Még nem számít bele a pontokba.</small>` : ""}
+              </td>
               <td>${row.result.html}</td>
               <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
             </tr>`).join("") || `<tr><td colspan="4" class="empty">Még nincs mentett tipped.</td></tr>`}
@@ -870,7 +1051,7 @@ function renderTips() {
             <tr>
               <td><strong>${row.user?.name || "Ismeretlen"}</strong></td>
               <td>${row.match.home} - ${row.match.away}<br><small>${formatDate(row.match.kickoff)}</small></td>
-              <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>Továbbjutó: ${row.prediction.qualifier}</small>` : ""}</td>
+              <td>${predictionSummary(row.prediction)}</td>
               ${isAdmin ? `<td>${formatStamp(row.prediction.updatedAt)}${row.late ? `<br><span class="pill bad">meccs után</span>` : ""}</td>` : ""}
               <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
             </tr>`).join("") || `<tr><td colspan="${isAdmin ? 5 : 4}" class="empty">Még nincs mentett tipp.</td></tr>`}
@@ -921,7 +1102,7 @@ function resultFormHtml(match, isAdmin) {
       <div class="match-meta">
         <span class="pill">${match.label}</span>
         <span class="kickoff">${formatDate(match.kickoff)}</span>
-        ${pending ? `<span class="pill warn">Függő: ${pending.homeGoals}-${pending.awayGoals}${pending.qualifier ? `, továbbjutó: ${pending.qualifier}` : ""}</span>` : ""}
+        ${pending ? `<span class="pill warn">Függő: ${predictionSummary(pending)}</span>` : ""}
         ${pending ? `<span>Beküldte: ${pendingUser?.name || "Ismeretlen"}</span>` : ""}
       </div>
       <div class="teams">
@@ -1027,12 +1208,13 @@ function emptyGroupRow(team, group) {
 function groupStandings() {
   const groups = new Map();
   state.matches
-    .filter((match) => match.stage === "group" && match.group)
+    .filter((match) => match.stage === "group")
     .forEach((match) => {
-      if (!groups.has(match.group)) groups.set(match.group, new Map());
-      const table = groups.get(match.group);
-      if (!table.has(match.home)) table.set(match.home, emptyGroupRow(match.home, match.group));
-      if (!table.has(match.away)) table.set(match.away, emptyGroupRow(match.away, match.group));
+      const group = groupLabel(match.group);
+      if (!groups.has(group)) groups.set(group, new Map());
+      const table = groups.get(group);
+      if (!table.has(match.home)) table.set(match.home, emptyGroupRow(match.home, group));
+      if (!table.has(match.away)) table.set(match.away, emptyGroupRow(match.away, group));
 
       const { result } = effectiveResultFor(match.id);
       if (!result) return;
@@ -1084,7 +1266,7 @@ function groupStandingsHtml() {
     <div class="group-grid">
       ${groups.map(({ group, rows }) => `
         <div class="table-wrap group-table">
-          <h3>${group}. csoport</h3>
+          <h3>${group}</h3>
           <table>
             <thead><tr><th>#</th><th>Csapat</th><th>M</th><th>GY</th><th>D</th><th>V</th><th>GK</th><th>P</th><th>Állás</th></tr></thead>
             <tbody>
@@ -1219,13 +1401,15 @@ function renderAdmin() {
       ${pending.map((item) => {
         const match = matchById(item.matchId);
         const user = userById(item.userId);
+        const relatedPredictionCount = pendingPredictions.filter((prediction) => prediction.matchId === item.matchId).length;
+        if (!match) return "";
         return `
           <div class="approval-row">
             <div>
               <span class="pill warn">függőben</span>
-              <strong>${match.home} ${item.homeGoals}-${item.awayGoals} ${match.away}</strong>
-              ${item.qualifier ? `<span>Továbbjutó: ${item.qualifier}</span>` : ""}
+              <strong>${match.home} ${predictionSummary(item)} ${match.away}</strong>
               <span>Beküldte: ${user?.name || "Ismeretlen"} · ${formatStamp(item.submittedAt)}</span>
+              ${relatedPredictionCount ? `<span class="pill warn">${relatedPredictionCount} függő tippmódosítás ennél a meccsnél</span>` : ""}
             </div>
             <div class="approval-actions">
               <button type="button" data-approve="${item.id}">Jóváhagyás</button>
@@ -1239,12 +1423,19 @@ function renderAdmin() {
       ${pendingPredictions.map((item) => {
         const match = matchById(item.matchId);
         const user = userById(item.userId);
+        const resultInfo = effectiveResultFor(item.matchId);
+        const resultStatus = resultInfo.status === "approved"
+          ? "az eredmény már végleges"
+          : resultInfo.status === "pending"
+          ? "az eredmény még jóváhagyásra vár"
+          : "még nincs eredmény";
+        if (!match) return "";
         return `
           <div class="approval-row">
             <div>
               <span class="pill warn">függőben</span>
-              <strong>${user?.name || "Ismeretlen"}: ${match.home} ${item.homeGoals}-${item.awayGoals} ${match.away}</strong>
-              ${item.qualifier ? `<span>Továbbjutó: ${item.qualifier}</span>` : ""}
+              <strong>${user?.name || "Ismeretlen"}: ${match.home} ${predictionSummary(item)} ${match.away}</strong>
+              <span class="pill info">${resultStatus}</span>
               <span>${formatStamp(item.submittedAt)}</span>
             </div>
             <div class="approval-actions">
@@ -1390,6 +1581,19 @@ function renderAdmin() {
       </div>
     </div>
     <div class="panel">
+      <h3>Csapatverseny beosztás</h3>
+      <div class="team-admin-grid">
+        ${playerUsers().map((item) => `
+          <label class="team-assignment-row">
+            <span>${item.name}${item.isAdmin ? " · admin" : ""}</span>
+            <select data-team-assignment="${item.id}">
+              <option value="">Nincs csapatban</option>
+              ${teamCompetitionTeams().map((team) => `<option value="${team.id}" ${userTeamId(item.id) === team.id ? "selected" : ""}>${team.name}</option>`).join("")}
+            </select>
+          </label>`).join("") || `<p class="empty">Nincs beosztható játékos.</p>`}
+      </div>
+    </div>
+    <div class="panel">
       <h3>Karbantartás</h3>
       <button class="secondary" type="button" id="exportBtn">Adatok exportálása JSON-ként</button>
       <form id="stateUploadForm" class="admin-prediction-form">
@@ -1415,6 +1619,7 @@ function renderAdmin() {
   els.adminView.querySelectorAll("[data-admin-role]").forEach((button) => button.addEventListener("click", () => setUserAdminRole(button.dataset.adminRole, button.dataset.adminRoleValue === "1")));
   els.adminView.querySelectorAll("[data-reset-user]").forEach((button) => button.addEventListener("click", () => resetUserPassword(button.dataset.resetUser)));
   els.adminView.querySelectorAll("[data-delete-user]").forEach((button) => button.addEventListener("click", () => deleteUser(button.dataset.deleteUser)));
+  els.adminView.querySelectorAll("[data-team-assignment]").forEach((select) => select.addEventListener("change", () => setUserTeam(select.dataset.teamAssignment, select.value)));
   els.adminView.querySelector("#exportBtn").addEventListener("click", exportData);
   els.adminView.querySelector("#stateUploadForm").addEventListener("submit", importStateFromJson);
 }
@@ -1785,6 +1990,25 @@ async function setUserAdminRole(userId, isAdmin) {
     render();
   } catch (error) {
     setDashboardFlash("error", error.message);
+  }
+}
+
+async function setUserTeam(userId, teamId) {
+  const user = userById(userId);
+  if (!user || !getUser()?.isAdmin || user.isSystemAdmin) return;
+  if (teamId && !teamById(teamId)) {
+    setDashboardFlash("error", "Ismeretlen csapat.");
+    render();
+    return;
+  }
+  try {
+    const data = await apiPost("set-team-assignment", { userId, teamId });
+    applyServerData(data);
+    setDashboardFlash("success", teamId ? "A csapatbeosztás elmentve." : "A játékos kikerült a csapatversenyből.");
+    render();
+  } catch (error) {
+    setDashboardFlash("error", error.message);
+    render();
   }
 }
 
