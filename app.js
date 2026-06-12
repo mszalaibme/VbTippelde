@@ -1,3 +1,4 @@
+const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
@@ -238,6 +239,19 @@ function applyServerData(data) {
   syncStateFromServer(data.state);
   if (Object.prototype.hasOwnProperty.call(data, "user")) {
     currentUserId = data.user?.id || null;
+  }
+}
+
+function rememberCurrentUserName(user) {
+  if (user?.name) {
+    localStorage.setItem(CURRENT_USER_NAME_KEY, user.name);
+  }
+}
+
+function prefillLoginNameFromStorage() {
+  const savedUserName = localStorage.getItem(CURRENT_USER_NAME_KEY);
+  if (savedUserName && els.loginName && !els.loginName.value) {
+    els.loginName.value = savedUserName;
   }
 }
 
@@ -570,14 +584,17 @@ function renderSession(user) {
     <button type="button" id="logoutBtn">Kilépés</button>`;
   document.querySelector("#sessionPasswordForm")?.addEventListener("submit", changeOwnPassword);
   document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
-  document.querySelector("#logoutBtn").addEventListener("click", async () => {
-    const data = await apiPost("logout", {});
-    clearDashboardFlash();
-    applyServerData(data);
-    render();
-  });
+  document.querySelector("#logoutBtn").addEventListener("click", logoutUser);
   const passwordForm = document.querySelector("#sessionPasswordForm");
   if (passwordForm) setupPasswordToggles(passwordForm);
+}
+
+async function logoutUser() {
+  const data = await apiPost("logout", {});
+  clearDashboardFlash();
+  applyServerData(data);
+  render();
+  prefillLoginNameFromStorage();
 }
 
 function passwordFieldHtml(name, label, autocomplete = "off") {
@@ -969,38 +986,56 @@ function resultText(matchId) {
 
 function renderMyTips() {
   const user = getUser();
-  const matchIds = new Set([
-    ...state.predictions.filter((prediction) => prediction.userId === user?.id).map((prediction) => prediction.matchId),
-    ...state.predictionSubmissions.filter((item) => item.userId === user?.id && item.status === "pending").map((item) => item.matchId)
-  ]);
-  const rows = Array.from(matchIds)
-    .map((matchId) => {
-      const match = matchById(matchId);
-      const prediction = state.predictions.find((item) => item.userId === user?.id && item.matchId === matchId) || null;
-      const pending = user ? pendingPredictionFor(user.id, matchId) : null;
-      const score = prediction ? predictionScoreDetails(prediction) : { points: 0, status: "none" };
-      return { prediction, pending, match, score, result: resultText(matchId) };
-    })
-    .filter((row) => row.match)
-    .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff));
+  const orderedUsers = playerUsers()
+    .slice()
+    .sort((a, b) => {
+      if (a.id === user?.id) return -1;
+      if (b.id === user?.id) return 1;
+      return a.name.localeCompare(b.name, "hu");
+    });
+  const matches = state.matches
+    .slice()
+    .filter((match) => hasStarted(match) || Boolean(effectiveResultFor(match.id).result))
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 
   els.myTipsView.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Meccs</th><th>Tippem</th><th>Végeredmény</th><th>Pont</th></tr></thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td><strong>${row.match.home} - ${row.match.away}</strong><br><small>${formatDate(row.match.kickoff)}</small></td>
-              <td>
-                ${row.prediction ? predictionSummary(row.prediction) : `<span class="muted">Nincs jóváhagyott tipp</span>`}
-                ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span><br><small class="muted">Még nem számít bele a pontokba.</small>` : ""}
-              </td>
-              <td>${row.result.html}</td>
-              <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
-            </tr>`).join("") || `<tr><td colspan="4" class="empty">Még nincs mentett tipped.</td></tr>`}
-        </tbody>
-      </table>
+    <div class="tips-accordion">
+      ${matches.map((match, index) => {
+        const result = resultText(match.id);
+        const rows = orderedUsers.map((player) => {
+          const prediction = state.predictions.find((item) => item.userId === player.id && item.matchId === match.id) || null;
+          const pending = pendingPredictionFor(player.id, match.id);
+          const score = prediction && result.status !== "none" ? predictionScoreDetails(prediction) : null;
+          return { player, prediction, pending, score };
+        });
+        return `
+          <details class="tips-match" ${index === 0 ? "open" : ""}>
+            <summary>
+              <span>
+                <strong>${match.home} - ${match.away}</strong>
+                <small>${formatDate(match.kickoff)} · ${match.label}${match.group ? ` · ${groupLabel(match.group)}` : ""}</small>
+              </span>
+              <span class="tips-result">${result.html}</span>
+            </summary>
+            <div class="scroll-hint">A táblázat oldalra görgethető.</div>
+            <div class="table-wrap compact-scroll">
+              <table class="tips-table">
+                <thead><tr><th>Játékos</th><th>Tipp</th><th>Pont</th></tr></thead>
+                <tbody>
+                  ${rows.map((row) => `
+                    <tr class="${row.player.id === user?.id ? "own-tip-row" : ""}">
+                      <td><strong>${row.player.name}</strong></td>
+                      <td>
+                        ${row.prediction ? predictionSummary(row.prediction) : `<span class="muted">nincs tipp</span>`}
+                        ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span>` : ""}
+                      </td>
+                      <td>${row.score ? `<strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}` : "-"}</td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </details>`;
+      }).join("") || `<p class="empty">Még nincs megjeleníthető lezárt vagy eredményes meccs.</p>`}
     </div>`;
 }
 
@@ -2142,6 +2177,7 @@ els.loginForm.addEventListener("submit", async (event) => {
   try {
     const user = await loginUser(els.loginName.value, els.loginPassword.value);
     currentUserId = user.id;
+    rememberCurrentUserName(user);
     clearDashboardFlash();
     els.loginMessage.textContent = "";
     els.loginForm.reset();
@@ -2200,6 +2236,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
     activateTab(tab.dataset.view);
   });
 });
+
+prefillLoginNameFromStorage();
 
 if (shouldUseServerStorage()) {
   state = normalizeState({});
