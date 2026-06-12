@@ -555,11 +555,15 @@ function missingTipKey(userId, matchId) {
   return `${userId}:${matchId}`;
 }
 
-function missingApprovedTipRows() {
+function missingClosedTipRows() {
   const hidden = new Set(state.hiddenMissingTips || []);
-  return approvedRows()
+  return state.matches
+    .filter((match) => hasStarted(match) || Boolean(approvedFor(match.id)))
+    .map((match) => ({ match, result: effectiveResultFor(match.id).result }))
+    .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff))
     .flatMap(({ match, result }) => playerUsers().map((user) => ({ match, result, user })))
     .filter(({ match, user }) => !state.predictions.some((prediction) => prediction.userId === user.id && prediction.matchId === match.id))
+    .filter(({ match, user }) => !pendingPredictionFor(user.id, match.id))
     .filter(({ match, user }) => !hidden.has(missingTipKey(user.id, match.id)));
 }
 
@@ -1681,7 +1685,7 @@ function renderAdmin() {
   const pending = state.resultSubmissions.filter((item) => item.status === "pending");
   const pendingPredictions = state.predictionSubmissions.filter((item) => item.status === "pending");
   const passwordRequests = pendingPasswordResetRequests();
-  const missingTips = missingApprovedTipRows();
+  const missingTips = missingClosedTipRows();
   els.adminView.innerHTML = `
     <div class="panel">
       <h3>Admin jóváhagyás</h3>
@@ -1753,19 +1757,25 @@ function renderAdmin() {
     </div>
     <div class="panel">
       <h3>Hiányzó tippek lezárt meccseken</h3>
-      ${missingTips.map(({ match, result, user }) => `
+      ${missingTips.map(({ match, result, user }) => {
+        const resultLabel = result
+          ? `${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}`
+          : `${match.home} - ${match.away}`;
+        return `
         <div class="approval-row">
           <div>
             <span class="pill warn">nincs tipp</span>
-            <strong>${user.name}: ${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}</strong>
-            ${result.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
+            <strong>${user.name}: ${resultLabel}</strong>
+            ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
+            ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
             <span>${formatDate(match.kickoff)} · ${match.label}</span>
           </div>
           <div class="approval-actions">
             <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
             <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
           </div>
-        </div>`).join("") || `<p class="empty">Nincs hiányzó tipp jóváhagyott eredményű meccsen.</p>`}
+        </div>`;
+      }).join("") || `<p class="empty">Nincs hiányzó tipp lezárt meccsen.</p>`}
     </div>
     <div class="panel">
       <h3>Utólagos tipp rögzítése</h3>
