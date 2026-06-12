@@ -1,5 +1,6 @@
 const STORAGE_KEY = "vb-tippliga-2026-v4";
 const CURRENT_USER_KEY = "vb-tippliga-current-user-v4";
+const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
 const PASSWORD_ITERATIONS = 150000;
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
@@ -249,8 +250,11 @@ async function loadServerState() {
     state = remoteState;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizedStateForStorage(state)));
     if (currentUserId && currentUserId !== SYSTEM_ADMIN_ID && !state.users.some((user) => user.id === currentUserId)) {
-      currentUserId = null;
-      localStorage.removeItem(CURRENT_USER_KEY);
+      const savedName = localStorage.getItem(CURRENT_USER_NAME_KEY);
+      const restoredUser = savedName
+        ? state.users.find((user) => user.name.toLowerCase() === savedName.toLowerCase())
+        : null;
+      if (restoredUser) storeCurrentUser(restoredUser);
     }
     suppressServerSave = false;
     render();
@@ -263,6 +267,20 @@ async function loadServerState() {
 function getUser() {
   if (currentUserId === SYSTEM_ADMIN_ID) return systemAdminUser();
   return state.users.find((user) => user.id === currentUserId) || null;
+}
+
+function storeCurrentUser(user) {
+  const userId = typeof user === "string" ? user : user.id;
+  currentUserId = userId;
+  localStorage.setItem(CURRENT_USER_KEY, userId);
+  if (typeof user !== "string" && user.name) {
+    localStorage.setItem(CURRENT_USER_NAME_KEY, user.name);
+  }
+}
+
+function clearCurrentUser() {
+  currentUserId = null;
+  localStorage.removeItem(CURRENT_USER_KEY);
 }
 
 function playerUsers() {
@@ -747,11 +765,7 @@ function renderSession(user) {
     <button type="button" id="logoutBtn">Kilépés</button>`;
   document.querySelector("#sessionPasswordForm")?.addEventListener("submit", changeOwnPassword);
   document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
-  document.querySelector("#logoutBtn").addEventListener("click", () => {
-    currentUserId = null;
-    localStorage.removeItem(CURRENT_USER_KEY);
-    render();
-  });
+  document.querySelector("#logoutBtn").addEventListener("click", logoutUser);
   const passwordForm = document.querySelector("#sessionPasswordForm");
   if (passwordForm) setupPasswordToggles(passwordForm);
 }
@@ -828,6 +842,11 @@ function updateVisibleTabs(user) {
 
 function notificationsEnabled() {
   return localStorage.getItem(REMINDER_KEY) === "enabled" && "Notification" in window && Notification.permission === "granted";
+}
+
+function logoutUser() {
+  clearCurrentUser();
+  render();
 }
 
 async function enableMatchNotifications() {
@@ -1197,33 +1216,56 @@ function resultText(matchId) {
 
 function renderMyTips() {
   const user = getUser();
-  const rows = state.predictions
-    .filter((prediction) => prediction.userId === user?.id)
+  const orderedUsers = playerUsers()
     .slice()
-    .sort((a, b) => new Date(matchById(a.matchId).kickoff) - new Date(matchById(b.matchId).kickoff))
-    .map((prediction) => {
-      const match = matchById(prediction.matchId);
-      const score = predictionScoreDetails(prediction);
-      return { prediction, pending: pendingPredictionFor(user.id, prediction.matchId), match, score, result: resultText(prediction.matchId) };
+    .sort((a, b) => {
+      if (a.id === user?.id) return -1;
+      if (b.id === user?.id) return 1;
+      return a.name.localeCompare(b.name, "hu");
     });
+  const matches = state.matches
+    .slice()
+    .filter((match) => Boolean(approvedFor(match.id)))
+    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
 
   els.myTipsView.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Meccs</th><th>Tippem</th><th>Végeredmény</th><th>Pont</th></tr></thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td><strong>${row.match.home} - ${row.match.away}</strong><br><small>${formatDate(row.match.kickoff)}</small></td>
-              <td>
-                ${predictionSummary(row.prediction)}
-                ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span>` : ""}
-              </td>
-              <td>${row.result.html}</td>
-              <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
-            </tr>`).join("") || `<tr><td colspan="4" class="empty">Még nincs mentett tipped.</td></tr>`}
-        </tbody>
-      </table>
+    <div class="tips-accordion">
+      ${matches.map((match, index) => {
+        const result = resultText(match.id);
+        const rows = orderedUsers.map((player) => {
+          const prediction = state.predictions.find((item) => item.userId === player.id && item.matchId === match.id);
+          const pending = pendingPredictionFor(player.id, match.id);
+          const score = prediction ? predictionScoreDetails(prediction) : null;
+          return { player, prediction, pending, score };
+        });
+        return `
+          <details class="tips-match" ${index === 0 ? "open" : ""}>
+            <summary>
+              <span>
+                <strong>${match.home} - ${match.away}</strong>
+                <small>${formatDate(match.kickoff)} · ${match.label}${match.group ? ` · ${groupLabel(match.group)}` : ""}</small>
+              </span>
+              <span class="tips-result">${result.html}</span>
+            </summary>
+            <div class="scroll-hint">A táblázat oldalra görgethető.</div>
+            <div class="table-wrap compact-scroll">
+              <table class="tips-table">
+                <thead><tr><th>Játékos</th><th>Tipp</th><th>Pont</th></tr></thead>
+                <tbody>
+                  ${rows.map((row) => `
+                    <tr class="${row.player.id === user?.id ? "own-tip-row" : ""}">
+                      <td><strong>${row.player.name}</strong></td>
+                      <td>
+                        ${row.prediction ? predictionSummary(row.prediction) : `<span class="muted">nincs tipp</span>`}
+                        ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span>` : ""}
+                      </td>
+                      <td>${row.score ? `<strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}` : "-"}</td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+          </details>`;
+      }).join("") || `<p class="empty">Még nincs megjeleníthető tipp.</p>`}
     </div>`;
 }
 
@@ -2348,8 +2390,7 @@ els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const user = await loginUser(els.loginName.value, els.loginPassword.value);
-    currentUserId = user.id;
-    localStorage.setItem(CURRENT_USER_KEY, user.id);
+    storeCurrentUser(user);
     els.loginMessage.textContent = "";
     els.loginForm.reset();
     render();
@@ -2401,12 +2442,24 @@ els.passwordResetForm.addEventListener("submit", (event) => {
   }
 });
 
+els.sessionBox.addEventListener("click", (event) => {
+  if (event.target.closest("#logoutBtn")) {
+    event.preventDefault();
+    logoutUser();
+  }
+});
+
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     if (tab.classList.contains("hidden")) return;
     activateTab(tab.dataset.view);
   });
 });
+
+const savedUserName = localStorage.getItem(CURRENT_USER_NAME_KEY);
+if (savedUserName && els.loginName && !els.loginName.value) {
+  els.loginName.value = savedUserName;
+}
 
 if (shouldUseServerStorage()) {
   state = normalizeState({});

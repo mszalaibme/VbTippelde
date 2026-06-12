@@ -127,6 +127,7 @@ main {
   top: 0;
   left: 0;
   right: 0;
+  z-index: 4;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -139,10 +140,13 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .brand {
   font-weight: 850;
+  flex-wrap: wrap;
+  row-gap: 2px;
 }
 
 .brand-mark {
@@ -155,10 +159,21 @@ main {
   color: #17211e;
 }
 
+.app-version {
+  align-self: center;
+  margin-left: 2px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
 .session-box button {
   min-height: 36px;
   background: rgba(255, 255, 255, 0.17);
   border: 1px solid rgba(255, 255, 255, 0.25);
+  touch-action: manipulation;
 }
 
 .password-menu {
@@ -447,13 +462,76 @@ main {
 }
 
 .tab {
-  background: transparent;
+  border: 1px solid #d7e2dc;
+  background: rgba(255, 255, 255, 0.72);
   color: var(--muted);
+  box-shadow: 0 5px 12px rgba(29, 52, 67, 0.06);
 }
 
 .tab.active {
+  border-color: var(--navy);
   background: var(--navy);
   color: white;
+  box-shadow: 0 8px 16px rgba(29, 52, 67, 0.16);
+}
+
+.tips-accordion {
+  display: grid;
+  gap: 10px;
+}
+
+.tips-match {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
+.tips-match summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.tips-match summary small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.tips-result {
+  color: var(--muted);
+  text-align: right;
+}
+
+.scroll-hint {
+  display: none;
+  padding: 7px 12px;
+  border-top: 1px solid var(--line);
+  background: #f7faf5;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.compact-scroll {
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: inset -18px 0 16px -18px rgba(29, 52, 67, 0.5);
+}
+
+.tips-table {
+  min-width: 520px;
+}
+
+.own-tip-row {
+  background: #f0f8f3;
 }
 
 .standings-switch {
@@ -989,12 +1067,96 @@ td strong {
   }
 
   .topbar {
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 6px;
+    padding: 12px 14px;
   }
 
   .session-box {
-    justify-content: flex-end;
+    width: 100%;
+    justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 6px;
+    padding: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .session-box > span {
+    flex-basis: 100%;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.82rem;
+    font-weight: 650;
+  }
+
+  .brand {
+    max-width: 100%;
+  }
+
+  .session-box button,
+  .password-menu summary {
+    min-height: 34px;
+    padding-inline: 10px;
+    border-color: rgba(255, 255, 255, 0.24);
+    background: rgba(8, 18, 20, 0.28);
+    font-size: 0.86rem;
+  }
+
+  .password-menu form {
+    position: fixed;
+    top: 118px;
+    left: 12px;
+    right: 12px;
+    z-index: 30;
+    width: auto;
+    max-height: min(420px, calc(100vh - 150px));
+    overflow-y: auto;
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px;
+    box-shadow: none;
+  }
+
+  .tab {
+    width: 100%;
+    min-height: 42px;
+    padding-inline: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+    background: #f8fbf8;
+  }
+
+  .tab.active {
+    background: var(--navy);
+  }
+
+  .standings-switch {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .standings-switch button {
+    width: 100%;
+  }
+
+  .tips-match summary {
+    grid-template-columns: 1fr;
+  }
+
+  .tips-result {
+    text-align: left;
+  }
+
+  .scroll-hint {
+    display: block;
   }
 }
 
