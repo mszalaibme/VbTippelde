@@ -1,10 +1,14 @@
 const STORAGE_KEY = "vb-tippliga-2026-v4";
 const CURRENT_USER_KEY = "vb-tippliga-current-user-v4";
 const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
+const CURRENT_USER_COOKIE = "vb_tippliga_current_user";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
+const APP_VERSION = "v47";
+const WHATS_NEW_KEY = "vb-tippliga-whats-new";
 const PASSWORD_ITERATIONS = 150000;
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
+const MISSING_TIP_LOOKAHEAD_MS = 24 * 60 * 60 * 1000;
 const SYSTEM_ADMIN_ID = "__system_admin__";
 const SYSTEM_ADMIN_NAME = "admin";
 const SYSTEM_ADMIN_PASSWORD = "admin8520";
@@ -77,10 +81,11 @@ const knockoutBracket = [
 ];
 
 let state = loadState();
-let currentUserId = localStorage.getItem(CURRENT_USER_KEY);
+let currentUserId = localStorage.getItem(CURRENT_USER_KEY) || readPersistentUserCookie();
 let serverSyncAvailable = false;
 let suppressServerSave = false;
 let standingsMode = "players";
+let tipsUserFilter = "all";
 
 function hasWebCrypto() {
   return Boolean(window.crypto?.subtle && window.crypto?.getRandomValues);
@@ -88,6 +93,22 @@ function hasWebCrypto() {
 
 function shouldUseServerStorage() {
   return window.location.protocol === "http:" || window.location.protocol === "https:";
+}
+
+function readPersistentUserCookie() {
+  const prefix = `${CURRENT_USER_COOKIE}=`;
+  const item = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith(prefix));
+  return item ? decodeURIComponent(item.slice(prefix.length)) : null;
+}
+
+function storePersistentUserCookie(userId) {
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${CURRENT_USER_COOKIE}=${encodeURIComponent(userId)}; Path=/; Max-Age=15552000; SameSite=Lax${secure}`;
+}
+
+function clearPersistentUserCookie() {
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${CURRENT_USER_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
 function createId() {
@@ -120,6 +141,8 @@ const els = {
   passwordResetForm: document.querySelector("#passwordResetForm"),
   passwordResetName: document.querySelector("#passwordResetName"),
   passwordResetMessage: document.querySelector("#passwordResetMessage"),
+  whatsNewDialog: document.querySelector("#whatsNewDialog"),
+  closeWhatsNewBtn: document.querySelector("#closeWhatsNewBtn"),
   loginMessage: document.querySelector("#loginMessage"),
   sessionBox: document.querySelector("#sessionBox"),
   welcomeTitle: document.querySelector("#welcomeTitle"),
@@ -133,7 +156,8 @@ const els = {
   tipsView: document.querySelector("#tipsView"),
   resultsView: document.querySelector("#resultsView"),
   playedView: document.querySelector("#playedView"),
-  adminView: document.querySelector("#adminView")
+  adminView: document.querySelector("#adminView"),
+  scrollTopBtn: document.querySelector("#scrollTopBtn")
 };
 
 function loadState() {
@@ -273,6 +297,7 @@ function storeCurrentUser(user) {
   const userId = typeof user === "string" ? user : user.id;
   currentUserId = userId;
   localStorage.setItem(CURRENT_USER_KEY, userId);
+  storePersistentUserCookie(userId);
   if (typeof user !== "string" && user.name) {
     localStorage.setItem(CURRENT_USER_NAME_KEY, user.name);
   }
@@ -281,6 +306,7 @@ function storeCurrentUser(user) {
 function clearCurrentUser() {
   currentUserId = null;
   localStorage.removeItem(CURRENT_USER_KEY);
+  clearPersistentUserCookie();
 }
 
 function playerUsers() {
@@ -555,16 +581,72 @@ function missingTipKey(userId, matchId) {
   return `${userId}:${matchId}`;
 }
 
-function missingClosedTipRows() {
+function missingTipRows(matchFilter) {
   const hidden = new Set(state.hiddenMissingTips || []);
   return state.matches
-    .filter((match) => hasStarted(match) || Boolean(approvedFor(match.id)))
+    .filter(matchFilter)
     .map((match) => ({ match, result: effectiveResultFor(match.id).result }))
     .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff))
     .flatMap(({ match, result }) => playerUsers().map((user) => ({ match, result, user })))
     .filter(({ match, user }) => !state.predictions.some((prediction) => prediction.userId === user.id && prediction.matchId === match.id))
     .filter(({ match, user }) => !pendingPredictionFor(user.id, match.id))
     .filter(({ match, user }) => !hidden.has(missingTipKey(user.id, match.id)));
+}
+
+function missingPastTipRows() {
+  const now = Date.now();
+  return missingTipRows((match) => new Date(match.kickoff).getTime() <= now || Boolean(approvedFor(match.id)));
+}
+
+function missingUpcomingTipRows() {
+  const now = Date.now();
+  const deadline = now + MISSING_TIP_LOOKAHEAD_MS;
+  return missingTipRows((match) => {
+    const kickoff = new Date(match.kickoff).getTime();
+    return kickoff > now && kickoff <= deadline;
+  });
+}
+
+function missingTipsHtml(rows, emptyMessage) {
+  return rows.map(({ match, result, user }) => {
+    const resultLabel = result
+      ? `${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}`
+      : `${match.home} - ${match.away}`;
+    return `
+      <div class="approval-row">
+        <div>
+          <span class="pill warn">nincs tipp</span>
+          <strong>${user.name}: ${resultLabel}</strong>
+          ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
+          ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
+          <span>${formatDate(match.kickoff)} · ${match.label}</span>
+        </div>
+        <div class="approval-actions">
+          <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
+          <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
+        </div>
+      </div>`;
+  }).join("") || `<p class="empty">${emptyMessage}</p>`;
+}
+
+function upcomingMissingTipsHtml(rows, emptyMessage) {
+  const byUser = new Map();
+  rows.forEach((row) => {
+    const userRows = byUser.get(row.user.id) || { user: row.user, rows: [] };
+    userRows.rows.push(row);
+    byUser.set(row.user.id, userRows);
+  });
+  return Array.from(byUser.values()).map(({ user, rows: userRows }) => `
+    <div class="approval-row upcoming-tip-reminder">
+      <div>
+        <strong>${user.name}</strong>
+        <div class="upcoming-tip-matches">
+          ${userRows.map(({ match }) => `
+            <span>${match.home} - ${match.away}</span>
+            <span>${formatDate(match.kickoff)}</span>`).join("")}
+        </div>
+      </div>
+    </div>`).join("") || `<p class="empty">${emptyMessage}</p>`;
 }
 
 function pendingPasswordResetRequests() {
@@ -746,6 +828,32 @@ function render() {
   renderResults();
   renderPlayed();
   renderAdmin();
+  showWhatsNewIfNeeded(user);
+}
+
+function whatsNewStorageKey(userId) {
+  return `${WHATS_NEW_KEY}:${userId}`;
+}
+
+function showWhatsNewIfNeeded(user) {
+  if (!user || user.mustChangePassword || !els.whatsNewDialog || els.whatsNewDialog.open) return;
+  if (localStorage.getItem(whatsNewStorageKey(user.id)) === APP_VERSION) return;
+  els.whatsNewDialog.querySelectorAll(".admin-whats-new").forEach((item) => item.classList.toggle("hidden", !user.isAdmin));
+  if (typeof els.whatsNewDialog.showModal === "function") {
+    els.whatsNewDialog.showModal();
+  } else {
+    els.whatsNewDialog.setAttribute("open", "");
+  }
+}
+
+function closeWhatsNew() {
+  const user = getUser();
+  if (user) localStorage.setItem(whatsNewStorageKey(user.id), APP_VERSION);
+  if (typeof els.whatsNewDialog.close === "function") {
+    els.whatsNewDialog.close();
+  } else {
+    els.whatsNewDialog.removeAttribute("open");
+  }
 }
 
 function renderSession(user) {
@@ -1230,7 +1338,7 @@ function renderMyTips() {
   const matches = state.matches
     .slice()
     .filter((match) => Boolean(approvedFor(match.id)))
-    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    .sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff));
 
   els.myTipsView.innerHTML = `
     <div class="tips-accordion">
@@ -1323,6 +1431,7 @@ async function changeOwnPassword(event) {
 
 function renderTips() {
   const isAdmin = Boolean(getUser()?.isAdmin);
+  const users = playerUsers().slice().sort((a, b) => a.name.localeCompare(b.name, "hu"));
   const rows = state.predictions
     .slice()
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
@@ -1333,23 +1442,40 @@ function renderTips() {
       const late = new Date(prediction.updatedAt) >= new Date(match.kickoff);
       return { prediction, match, user, score, late };
     });
+  if (tipsUserFilter !== "all" && !users.some((user) => user.id === tipsUserFilter)) tipsUserFilter = "all";
+  const filteredRows = tipsUserFilter === "all"
+    ? rows
+    : rows.filter((row) => row.prediction.userId === tipsUserFilter);
 
   els.tipsView.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Játékos</th><th>Meccs</th><th>Tipp</th>${isAdmin ? "<th>Időbélyeg</th>" : ""}<th>Pont</th></tr></thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td><strong>${row.user?.name || "Ismeretlen"}</strong></td>
-              <td>${row.match.home} - ${row.match.away}<br><small>${formatDate(row.match.kickoff)}</small></td>
-              <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>Továbbjutó: ${row.prediction.qualifier}</small>` : ""}</td>
-              ${isAdmin ? `<td>${formatStamp(row.prediction.updatedAt)}${row.late ? `<br><span class="pill bad">meccs után</span>` : ""}</td>` : ""}
-              <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
-            </tr>`).join("") || `<tr><td colspan="${isAdmin ? 5 : 4}" class="empty">Még nincs mentett tipp.</td></tr>`}
-        </tbody>
-      </table>
+    <div class="panel tips-filter-panel">
+      <label class="tips-filter">
+        Játékos
+        <select id="tipsUserFilter">
+          <option value="all">Minden játékos</option>
+          ${users.map((user) => `<option value="${user.id}" ${user.id === tipsUserFilter ? "selected" : ""}>${user.name}</option>`).join("")}
+        </select>
+      </label>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Játékos</th><th>Meccs</th><th>Tipp</th>${isAdmin ? "<th>Időbélyeg</th>" : ""}<th>Pont</th></tr></thead>
+          <tbody>
+            ${filteredRows.map((row) => `
+              <tr>
+                <td><strong>${row.user?.name || "Ismeretlen"}</strong></td>
+                <td>${row.match.home} - ${row.match.away}<br><small>${formatDate(row.match.kickoff)}</small></td>
+                <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>Továbbjutó: ${row.prediction.qualifier}</small>` : ""}</td>
+                ${isAdmin ? `<td>${formatStamp(row.prediction.updatedAt)}${row.late ? `<br><span class="pill bad">meccs után</span>` : ""}</td>` : ""}
+                <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
+              </tr>`).join("") || `<tr><td colspan="${isAdmin ? 5 : 4}" class="empty">Nincs mentett tipp a kiválasztott játékostól.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
     </div>`;
+  els.tipsView.querySelector("#tipsUserFilter")?.addEventListener("change", (event) => {
+    tipsUserFilter = event.target.value;
+    renderTips();
+  });
 }
 
 function renderResults() {
@@ -1685,7 +1811,8 @@ function renderAdmin() {
   const pending = state.resultSubmissions.filter((item) => item.status === "pending");
   const pendingPredictions = state.predictionSubmissions.filter((item) => item.status === "pending");
   const passwordRequests = pendingPasswordResetRequests();
-  const missingTips = missingClosedTipRows();
+  const missingPastTips = missingPastTipRows();
+  const missingUpcomingTips = missingUpcomingTipRows();
   els.adminView.innerHTML = `
     <div class="panel">
       <h3>Admin jóváhagyás</h3>
@@ -1756,26 +1883,12 @@ function renderAdmin() {
       }).join("") || `<p class="empty">Nincs jelszó-visszaállítási kérés.</p>`}
     </div>
     <div class="panel">
-      <h3>Hiányzó tippek lezárt meccseken</h3>
-      ${missingTips.map(({ match, result, user }) => {
-        const resultLabel = result
-          ? `${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}`
-          : `${match.home} - ${match.away}`;
-        return `
-        <div class="approval-row">
-          <div>
-            <span class="pill warn">nincs tipp</span>
-            <strong>${user.name}: ${resultLabel}</strong>
-            ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
-            ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
-            <span>${formatDate(match.kickoff)} · ${match.label}</span>
-          </div>
-          <div class="approval-actions">
-            <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
-            <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
-          </div>
-        </div>`;
-      }).join("") || `<p class="empty">Nincs hiányzó tipp lezárt meccsen.</p>`}
+      <h3>Hiányzó tippek elmúlt meccseken (${missingPastTips.length})</h3>
+      ${missingTipsHtml(missingPastTips, "Nincs hiányzó tipp elmúlt meccsen.")}
+    </div>
+    <div class="panel">
+      <h3>Hiányzó tippek a következő 24 órában (${missingUpcomingTips.length})</h3>
+      ${upcomingMissingTipsHtml(missingUpcomingTips, "Nincs hiányzó tipp a következő 24 órában kezdődő meccseken.")}
     </div>
     <div class="panel">
       <h3>Utólagos tipp rögzítése</h3>
@@ -1893,6 +2006,12 @@ function renderAdmin() {
     <div class="panel">
       <h3>Karbantartás</h3>
       <button class="secondary" type="button" id="exportBtn">Adatok exportálása JSON-ként</button>
+      <form id="importDataForm" class="admin-prediction-form">
+        <label>Korábbi mentés <input name="dataFile" type="file" accept="application/json,.json" required /></label>
+        <p class="muted">A visszaállítás a jelenlegi felhasználókat, meccseket, tippeket és eredményeket teljesen felülírja.</p>
+        <button class="danger" type="submit">Adatok visszaállítása JSON-ből</button>
+        <p class="form-message"></p>
+      </form>
     </div>`;
 
   els.adminView.querySelectorAll("[data-approve]").forEach((button) => button.addEventListener("click", () => approveResult(button.dataset.approve)));
@@ -1913,6 +2032,7 @@ function renderAdmin() {
   els.adminView.querySelectorAll("[data-delete-user]").forEach((button) => button.addEventListener("click", () => deleteUser(button.dataset.deleteUser)));
   els.adminView.querySelectorAll("[data-team-assignment]").forEach((select) => select.addEventListener("change", () => setUserTeam(select.dataset.teamAssignment, select.value)));
   els.adminView.querySelector("#exportBtn").addEventListener("click", exportData);
+  els.adminView.querySelector("#importDataForm").addEventListener("submit", importData);
 }
 
 function setupAdminPredictionForm() {
@@ -2396,6 +2516,40 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
+function updateScrollTopButton() {
+  els.scrollTopBtn?.classList.toggle("is-visible", window.scrollY > 360);
+}
+
+async function importData(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = form.querySelector(".form-message");
+  const file = form.dataFile.files[0];
+  if (!getUser()?.isAdmin || !file) return;
+
+  try {
+    const imported = JSON.parse(await file.text());
+    if (!imported || typeof imported !== "object" || Array.isArray(imported)) {
+      throw new Error("A kiválasztott fájl nem érvényes adatmentés.");
+    }
+    if (!window.confirm("Biztosan visszaállítod ezt a mentést? A jelenlegi adatok teljesen felülíródnak.")) return;
+
+    state = normalizeState(imported);
+    stripPlainPasswords(state);
+    saveState();
+    form.reset();
+    if (currentUserId !== SYSTEM_ADMIN_ID && !state.users.some((user) => user.id === currentUserId)) {
+      clearCurrentUser();
+    }
+    render();
+    els.adminView.querySelector("#importDataForm .form-message")?.append("Az adatok visszaállítása elkészült.");
+  } catch (error) {
+    message.textContent = error instanceof SyntaxError
+      ? "A fájl nem érvényes JSON formátumú."
+      : error.message;
+  }
+}
+
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -2434,6 +2588,12 @@ els.closePasswordResetBtn.addEventListener("click", () => {
   closePasswordResetDialog();
 });
 
+els.closeWhatsNewBtn?.addEventListener("click", closeWhatsNew);
+
+els.whatsNewDialog?.addEventListener("click", (event) => {
+  if (event.target === els.whatsNewDialog) closeWhatsNew();
+});
+
 els.passwordResetDialog.addEventListener("click", (event) => {
   if (event.target === els.passwordResetDialog) {
     closePasswordResetDialog();
@@ -2459,6 +2619,12 @@ els.sessionBox.addEventListener("click", (event) => {
   }
 });
 
+els.scrollTopBtn?.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+window.addEventListener("scroll", updateScrollTopButton, { passive: true });
+
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     if (tab.classList.contains("hidden")) return;
@@ -2472,13 +2638,12 @@ if (savedUserName && els.loginName && !els.loginName.value) {
 }
 
 if (shouldUseServerStorage()) {
-  state = normalizeState({});
-  loadServerState().finally(() => {
-    render();
-    checkMatchReminders();
-  });
+  render();
+  updateScrollTopButton();
+  loadServerState().finally(checkMatchReminders);
 } else {
   render();
+  updateScrollTopButton();
   loadServerState();
   checkMatchReminders();
 }

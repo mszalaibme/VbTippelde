@@ -14,7 +14,7 @@
     <link rel="shortcut icon" type="image/png" href="assets/icon-192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png" />
-    <link rel="stylesheet" href="styles.css?v=38" />
+    <link rel="stylesheet" href="styles.css?v=47" />
   </head>
   <body>
     <div class="app-shell">
@@ -25,7 +25,7 @@
           <div class="brand">
             <span class="brand-mark">26</span>
             <span>VB TippLiga</span>
-            <span class="app-version">v38</span>
+            <span class="app-version">v47</span>
           </div>
           <div id="sessionBox" class="session-box"></div>
         </nav>
@@ -84,7 +84,7 @@
             <button class="tab active player-only" data-view="matches" type="button">Tippelek!</button>
             <button class="tab player-only" data-view="myTips" type="button">Korábbi Tippek</button>
             <button class="tab" data-view="standings" type="button">Tabella</button>
-            <button class="tab" data-view="played" type="button">Eredmények</button>
+            <button class="tab" data-view="played" type="button">VB állás</button>
             <button class="tab" data-view="results" type="button">Eredmény feltöltése</button>
             <button class="tab admin-only hidden" data-view="tips" type="button">Minden tipp</button>
             <button class="tab admin-only hidden" data-view="admin" type="button">Admin</button>
@@ -149,6 +149,30 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=38"></script>
+    <dialog id="whatsNewDialog" class="modal whats-new-modal">
+      <section class="modal-card">
+        <div>
+          <p class="section-kicker">v47</p>
+          <h2>Újdonságok</h2>
+        </div>
+        <ul class="whats-new-list">
+          <li>A Korábbi Tippek nézetben a legfrissebb meccsek kerülnek előre.</li>
+          <li>A korábbi Eredmények fül neve most VB állás.</li>
+          <li>A jobb alsó sarokban megjelent a vissza a tetejére gomb.</li>
+          <li class="admin-whats-new hidden">Az admin külön látja az elmúlt és a következő 24 órában kezdődő meccsek hiányzó tippjeit; a közelgő meccsek játékosonként csoportosítva jelennek meg.</li>
+          <li class="admin-whats-new hidden">A Minden tipp nézetben játékosonként szűrhetők a tippek.</li>
+          <li class="admin-whats-new hidden">Az Admin Karbantartás résznél újra elérhető a JSON-mentés visszaállítása.</li>
+        </ul>
+        <div class="login-actions">
+          <button id="closeWhatsNewBtn" type="button">Rendben</button>
+        </div>
+      </section>
+    </dialog>
+
+    <button id="scrollTopBtn" class="scroll-top-button" type="button" aria-label="Vissza a tetejére">
+      <img src="assets/scroll-top.png" alt="" />
+    </button>
+
+    <script src="app.js?v=47"></script>
   </body>
 </html>

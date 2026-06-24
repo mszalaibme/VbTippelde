@@ -1,4 +1,4 @@
-const CACHE_NAME = "vb-tippliga-2026-v38";
+const CACHE_NAME = "vb-tippliga-2026-v47";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -7,7 +7,8 @@ const APP_SHELL = [
   "/manifest.webmanifest",
   "/assets/world-cup-hero.png",
   "/assets/icon-192.png",
-  "/assets/icon-512.png"
+  "/assets/icon-512.png",
+  "/assets/scroll-top.png"
 ];
 
 self.addEventListener("install", (event) => {
