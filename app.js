@@ -1,7 +1,10 @@
 const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
+const APP_VERSION = "v49";
+const WHATS_NEW_KEY = "vb-tippliga-whats-new";
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
+const MISSING_TIP_LOOKAHEAD_MS = 24 * 60 * 60 * 1000;
 
 const seedMatches = [];
 
@@ -28,6 +31,7 @@ let serverSyncAvailable = true;
 let suppressServerSave = false;
 let dashboardFlash = null;
 let standingsMode = "players";
+let tipsUserFilter = "all";
 
 function shouldUseServerStorage() {
   return true;
@@ -45,6 +49,8 @@ const els = {
   passwordResetForm: document.querySelector("#passwordResetForm"),
   passwordResetName: document.querySelector("#passwordResetName"),
   passwordResetMessage: document.querySelector("#passwordResetMessage"),
+  whatsNewDialog: document.querySelector("#whatsNewDialog"),
+  closeWhatsNewBtn: document.querySelector("#closeWhatsNewBtn"),
   loginMessage: document.querySelector("#loginMessage"),
   sessionBox: document.querySelector("#sessionBox"),
   welcomeTitle: document.querySelector("#welcomeTitle"),
@@ -59,7 +65,8 @@ const els = {
   tipsView: document.querySelector("#tipsView"),
   resultsView: document.querySelector("#resultsView"),
   playedView: document.querySelector("#playedView"),
-  adminView: document.querySelector("#adminView")
+  adminView: document.querySelector("#adminView"),
+  scrollTopBtn: document.querySelector("#scrollTopBtn")
 };
 
 function loadState() {
@@ -361,16 +368,72 @@ function missingTipKey(userId, matchId) {
   return `${userId}:${matchId}`;
 }
 
-function missingClosedTipRows() {
+function missingTipRows(matchFilter) {
   const hidden = new Set(state.hiddenMissingTips || []);
   return state.matches
-    .filter((match) => hasStarted(match) || Boolean(approvedFor(match.id)))
+    .filter(matchFilter)
     .map((match) => ({ match, result: effectiveResultFor(match.id).result }))
     .sort((a, b) => new Date(a.match.kickoff) - new Date(b.match.kickoff))
     .flatMap(({ match, result }) => playerUsers().map((user) => ({ match, result, user })))
     .filter(({ match, user }) => !state.predictions.some((prediction) => prediction.userId === user.id && prediction.matchId === match.id))
     .filter(({ match, user }) => !pendingPredictionFor(user.id, match.id))
     .filter(({ match, user }) => !hidden.has(missingTipKey(user.id, match.id)));
+}
+
+function missingPastTipRows() {
+  const now = Date.now();
+  return missingTipRows((match) => new Date(match.kickoff).getTime() <= now || Boolean(approvedFor(match.id)));
+}
+
+function missingUpcomingTipRows() {
+  const now = Date.now();
+  const deadline = now + MISSING_TIP_LOOKAHEAD_MS;
+  return missingTipRows((match) => {
+    const kickoff = new Date(match.kickoff).getTime();
+    return kickoff > now && kickoff <= deadline;
+  });
+}
+
+function missingTipsHtml(rows, emptyMessage) {
+  return rows.map(({ match, result, user }) => {
+    const resultLabel = result
+      ? `${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}`
+      : `${match.home} - ${match.away}`;
+    return `
+      <div class="approval-row">
+        <div>
+          <span class="pill warn">nincs tipp</span>
+          <strong>${user.name}: ${resultLabel}</strong>
+          ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
+          ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
+          <span>${formatDate(match.kickoff)} · ${match.label}</span>
+        </div>
+        <div class="approval-actions">
+          <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
+          <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
+        </div>
+      </div>`;
+  }).join("") || `<p class="empty">${emptyMessage}</p>`;
+}
+
+function upcomingMissingTipsHtml(rows, emptyMessage) {
+  const byUser = new Map();
+  rows.forEach((row) => {
+    const userRows = byUser.get(row.user.id) || { user: row.user, rows: [] };
+    userRows.rows.push(row);
+    byUser.set(row.user.id, userRows);
+  });
+  return Array.from(byUser.values()).map(({ user, rows: userRows }) => `
+    <div class="approval-row upcoming-tip-reminder">
+      <div>
+        <strong>${user.name}</strong>
+        <div class="upcoming-tip-matches">
+          ${userRows.map(({ match }) => `
+            <span>${match.home} - ${match.away}</span>
+            <span>${formatDate(match.kickoff)}</span>`).join("")}
+        </div>
+      </div>
+    </div>`).join("") || `<p class="empty">${emptyMessage}</p>`;
 }
 
 function pendingPasswordResetRequests() {
@@ -561,6 +624,32 @@ function render() {
   renderResults();
   renderPlayed();
   renderAdmin();
+  showWhatsNewIfNeeded(user);
+}
+
+function whatsNewStorageKey(userId) {
+  return `${WHATS_NEW_KEY}:${userId}`;
+}
+
+function showWhatsNewIfNeeded(user) {
+  if (!user || user.mustChangePassword || !els.whatsNewDialog || els.whatsNewDialog.open) return;
+  if (localStorage.getItem(whatsNewStorageKey(user.id)) === APP_VERSION) return;
+  els.whatsNewDialog.querySelectorAll(".admin-whats-new").forEach((item) => item.classList.toggle("hidden", !user.isAdmin));
+  if (typeof els.whatsNewDialog.showModal === "function") {
+    els.whatsNewDialog.showModal();
+  } else {
+    els.whatsNewDialog.setAttribute("open", "");
+  }
+}
+
+function closeWhatsNew() {
+  const user = getUser();
+  if (user) localStorage.setItem(whatsNewStorageKey(user.id), APP_VERSION);
+  if (typeof els.whatsNewDialog?.close === "function") {
+    els.whatsNewDialog.close();
+  } else {
+    els.whatsNewDialog?.removeAttribute("open");
+  }
 }
 
 function renderSession(user) {
@@ -996,7 +1085,7 @@ function renderMyTips() {
   const matches = state.matches
     .slice()
     .filter((match) => hasStarted(match) || Boolean(effectiveResultFor(match.id).result))
-    .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
+    .sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff));
 
   els.myTipsView.innerHTML = `
     <div class="tips-accordion">
@@ -1070,8 +1159,10 @@ async function changeOwnPassword(event) {
 
 function renderTips() {
   const isAdmin = Boolean(getUser()?.isAdmin);
+  const users = playerUsers().slice().sort((a, b) => a.name.localeCompare(b.name, "hu"));
   const rows = state.predictions
     .slice()
+    .filter((prediction) => tipsUserFilter === "all" || prediction.userId === tipsUserFilter)
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
     .map((prediction) => {
       const match = matchById(prediction.matchId);
@@ -1082,6 +1173,15 @@ function renderTips() {
     });
 
   els.tipsView.innerHTML = `
+    <div class="panel tips-filter-panel">
+      <label class="tips-filter">
+        Játékos szűrő
+        <select id="tipsUserFilter">
+          <option value="all">Minden játékos</option>
+          ${users.map((user) => `<option value="${user.id}" ${tipsUserFilter === user.id ? "selected" : ""}>${user.name}${user.isAdmin ? " · admin" : ""}</option>`).join("")}
+        </select>
+      </label>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>Játékos</th><th>Meccs</th><th>Tipp</th>${isAdmin ? "<th>Időbélyeg</th>" : ""}<th>Pont</th></tr></thead>
@@ -1097,6 +1197,10 @@ function renderTips() {
         </tbody>
       </table>
     </div>`;
+  els.tipsView.querySelector("#tipsUserFilter")?.addEventListener("change", (event) => {
+    tipsUserFilter = event.target.value;
+    renderTips();
+  });
 }
 
 function renderResults() {
@@ -1433,7 +1537,8 @@ function renderAdmin() {
   const pending = state.resultSubmissions.filter((item) => item.status === "pending");
   const pendingPredictions = state.predictionSubmissions.filter((item) => item.status === "pending");
   const passwordRequests = pendingPasswordResetRequests();
-  const missingTips = missingClosedTipRows();
+  const missingPastTips = missingPastTipRows();
+  const missingUpcomingTips = missingUpcomingTipRows();
   els.adminView.innerHTML = `
     <div class="panel">
       <h3>Admin jóváhagyás</h3>
@@ -1504,26 +1609,12 @@ function renderAdmin() {
       }).join("") || `<p class="empty">Nincs jelszó-visszaállítási kérés.</p>`}
     </div>
     <div class="panel">
-      <h3>Hiányzó tippek lezárt meccseken</h3>
-      ${missingTips.map(({ match, result, user }) => {
-        const resultLabel = result
-          ? `${match.home} ${result.homeGoals}-${result.awayGoals} ${match.away}`
-          : `${match.home} - ${match.away}`;
-        return `
-        <div class="approval-row">
-          <div>
-            <span class="pill warn">nincs tipp</span>
-            <strong>${user.name}: ${resultLabel}</strong>
-            ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
-            ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
-            <span>${formatDate(match.kickoff)} · ${match.label}</span>
-          </div>
-          <div class="approval-actions">
-            <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
-            <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
-          </div>
-        </div>`;
-      }).join("") || `<p class="empty">Nincs hiányzó tipp lezárt meccsen.</p>`}
+      <h3>Hiányzó tippek elmúlt meccseken (${missingPastTips.length})</h3>
+      ${missingTipsHtml(missingPastTips, "Nincs hiányzó tipp elmúlt meccsen.")}
+    </div>
+    <div class="panel">
+      <h3>Hiányzó tippek a következő 24 órában (${missingUpcomingTips.length})</h3>
+      ${upcomingMissingTipsHtml(missingUpcomingTips, "Nincs hiányzó tipp a következő 24 órában kezdődő meccseken.")}
     </div>
     <div class="panel">
       <h3>Utólagos tipp rögzítése</h3>
@@ -2172,6 +2263,10 @@ async function exportData() {
   }
 }
 
+function updateScrollTopButton() {
+  els.scrollTopBtn?.classList.toggle("is-visible", window.scrollY > 360);
+}
+
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -2212,6 +2307,12 @@ els.closePasswordResetBtn.addEventListener("click", () => {
   closePasswordResetDialog();
 });
 
+els.closeWhatsNewBtn?.addEventListener("click", closeWhatsNew);
+
+els.whatsNewDialog?.addEventListener("click", (event) => {
+  if (event.target === els.whatsNewDialog) closeWhatsNew();
+});
+
 els.passwordResetDialog.addEventListener("click", (event) => {
   if (event.target === els.passwordResetDialog) {
     closePasswordResetDialog();
@@ -2230,6 +2331,12 @@ els.passwordResetForm.addEventListener("submit", async (event) => {
   }
 });
 
+els.scrollTopBtn?.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+window.addEventListener("scroll", updateScrollTopButton, { passive: true });
+
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     if (tab.classList.contains("hidden")) return;
@@ -2243,10 +2350,12 @@ if (shouldUseServerStorage()) {
   state = normalizeState({});
   loadServerState().finally(() => {
     render();
+    updateScrollTopButton();
     checkMatchReminders();
   });
 } else {
   render();
+  updateScrollTopButton();
   loadServerState();
   checkMatchReminders();
 }

@@ -84,6 +84,39 @@ label {
   display: none !important;
 }
 
+.scroll-top-button {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 6px 18px rgba(13, 38, 43, 0.24);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.scroll-top-button.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-top-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -542,6 +575,19 @@ main {
   min-width: 520px;
 }
 
+.tips-filter-panel {
+  align-items: start;
+}
+
+.tips-filter {
+  display: grid;
+  gap: 6px;
+  width: min(320px, 100%);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
 .own-tip-row {
   background: #f0f8f3;
 }
@@ -660,6 +706,28 @@ main {
 .pending-tip-box small {
   color: #765311;
   font-weight: 650;
+}
+
+.whats-new-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.upcoming-tip-reminder > div {
+  display: grid;
+  gap: 7px;
+}
+
+.upcoming-tip-matches {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 16px;
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 
 .teams {
@@ -1152,6 +1220,13 @@ td strong {
 }
 
 @media (max-width: 540px) {
+  .scroll-top-button {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: 42px;
+    height: 42px;
+  }
+
   main {
     width: calc(100% - 18px);
     margin-top: -30px;
