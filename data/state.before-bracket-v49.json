@@ -1,0 +1,107 @@
+{
+  "users": [
+    {
+      "id": "user-mihaly",
+      "name": "Mihály",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "GlE3k0uTN8rFJKv5WNI0Tg==",
+      "passwordHash": "v0PoUqi36hczX7RL/YMH3PTpgnxzC6XRjkWcdZkmOyE=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-miklos",
+      "name": "Miklós",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "AR3T1jw5PustisaoACjT3Q==",
+      "passwordHash": "zYkgpJrw4o1v4Su+d1PRavvmnInx2FsDGJ3jxAXfew0=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-marci",
+      "name": "Marci",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "dZK07XaDcbFRRRp7TsXBHw==",
+      "passwordHash": "v2Nw5sQQ9PK4uZBq/vcTzvSy9gFBW5xg41+InvQPfe4=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-merse",
+      "name": "Merse",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "yzi1oE9LTHTJBHnhQCLcaA==",
+      "passwordHash": "O7D57NEE6fK5P4jfeQ4mq208G2x/PIt7wPILLC+Y72U=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-anya",
+      "name": "Anya",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "51eZOsZn6RQqEiRraZV73A==",
+      "passwordHash": "AL15uugRWhvFMdi9Ku+Fyz13SnpcGq2qsIpxCSk2abU=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-kinga",
+      "name": "Kinga",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "fwWIz2Xn3IRFEsp6AYAyQw==",
+      "passwordHash": "rdPb2yB7r4up8JdUg3kH61R1wiaaOmnhJR4SWrGCK1I=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-orsi",
+      "name": "Orsi",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "84eqwLI5dwWoNscAv8UFMA==",
+      "passwordHash": "7yDJ8FYF/GPAq7Co+YqFz8D65X1/KBkNELaGdisYPlM=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    },
+    {
+      "id": "user-mor",
+      "name": "Mór",
+      "isAdmin": false,
+      "isSystemAdmin": false,
+      "mustChangePassword": false,
+      "createdAt": "2026-06-10T00:00:00.000Z",
+      "passwordSalt": "ZL3Dc763p4JaFL20Nf+kfQ==",
+      "passwordHash": "Cp+kiD0fTy2YfAgaHvTi89ajgPHx+PMoEjyJ+turgwo=",
+      "passwordVersion": 2,
+      "passwordIterations": 150000
+    }
+  ],
+  "matches": [],
+  "predictions": [],
+  "resultSubmissions": [],
+  "predictionSubmissions": [],
+  "passwordResetRequests": [],
+  "hiddenMissingTips": [],
+  "approvedResults": []
+}
