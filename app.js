@@ -1,12 +1,76 @@
 const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
-const APP_VERSION = "v49";
+const APP_VERSION = "v51";
 const WHATS_NEW_KEY = "vb-tippliga-whats-new";
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
 const MISSING_TIP_LOOKAHEAD_MS = 24 * 60 * 60 * 1000;
 
 const seedMatches = [];
+
+const roundOf32Slots = [
+  { no: 73, home: { group: "A", rank: 2 }, away: { group: "B", rank: 2 } },
+  { no: 74, home: { group: "E", rank: 1 }, away: { groups: ["A", "B", "C", "D", "F"], rank: 3, fallback: "A/B/C/D/F csoport 3." } },
+  { no: 75, home: { group: "F", rank: 1 }, away: { group: "C", rank: 2 } },
+  { no: 76, home: { group: "C", rank: 1 }, away: { group: "F", rank: 2 } },
+  { no: 77, home: { group: "I", rank: 1 }, away: { groups: ["C", "D", "F", "G", "H"], rank: 3, fallback: "C/D/F/G/H csoport 3." } },
+  { no: 78, home: { group: "E", rank: 2 }, away: { group: "I", rank: 2 } },
+  { no: 79, home: { group: "A", rank: 1 }, away: { groups: ["C", "E", "F", "H", "I"], rank: 3, fallback: "C/E/F/H/I csoport 3." } },
+  { no: 80, home: { group: "L", rank: 1 }, away: { groups: ["E", "H", "I", "J", "K"], rank: 3, fallback: "E/H/I/J/K csoport 3." } },
+  { no: 81, home: { group: "D", rank: 1 }, away: { groups: ["B", "E", "F", "I", "J"], rank: 3, fallback: "B/E/F/I/J csoport 3." } },
+  { no: 82, home: { group: "G", rank: 1 }, away: { groups: ["A", "E", "H", "I", "J"], rank: 3, fallback: "A/E/H/I/J csoport 3." } },
+  { no: 83, home: { group: "K", rank: 2 }, away: { group: "L", rank: 2 } },
+  { no: 84, home: { group: "H", rank: 1 }, away: { group: "J", rank: 2 } },
+  { no: 85, home: { group: "B", rank: 1 }, away: { groups: ["E", "F", "G", "I", "J"], rank: 3, fallback: "E/F/G/I/J csoport 3." } },
+  { no: 86, home: { group: "J", rank: 1 }, away: { group: "H", rank: 2 } },
+  { no: 87, home: { group: "K", rank: 1 }, away: { groups: ["D", "E", "I", "J", "L"], rank: 3, fallback: "D/E/I/J/L csoport 3." } },
+  { no: 88, home: { group: "D", rank: 2 }, away: { group: "G", rank: 2 } }
+];
+
+const bracketLeafOrder = [73, 75, 74, 77, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87];
+
+const knockoutBracketRounds = [
+  {
+    title: "Legjobb 32",
+    matches: roundOf32Slots
+  },
+  {
+    title: "Nyolcaddöntő",
+    matches: [
+      { no: 89, homeFrom: 73, awayFrom: 75 },
+      { no: 90, homeFrom: 74, awayFrom: 77 },
+      { no: 91, homeFrom: 76, awayFrom: 78 },
+      { no: 92, homeFrom: 79, awayFrom: 80 },
+      { no: 93, homeFrom: 83, awayFrom: 84 },
+      { no: 94, homeFrom: 81, awayFrom: 82 },
+      { no: 95, homeFrom: 86, awayFrom: 88 },
+      { no: 96, homeFrom: 85, awayFrom: 87 }
+    ]
+  },
+  {
+    title: "Negyeddöntő",
+    matches: [
+      { no: 97, homeFrom: 89, awayFrom: 90 },
+      { no: 98, homeFrom: 93, awayFrom: 94 },
+      { no: 99, homeFrom: 91, awayFrom: 92 },
+      { no: 100, homeFrom: 95, awayFrom: 96 }
+    ]
+  },
+  {
+    title: "Elődöntő",
+    matches: [
+      { no: 101, homeFrom: 97, awayFrom: 98 },
+      { no: 102, homeFrom: 99, awayFrom: 100 }
+    ]
+  },
+  {
+    title: "Döntők",
+    matches: [
+      { no: 103, homeFrom: 101, awayFrom: 102, sourceType: "loser", note: "Bronzmeccs" },
+      { no: 104, homeFrom: 101, awayFrom: 102, note: "Döntő" }
+    ]
+  }
+];
 
 const defaultConfig = {
   admin: {
@@ -16,7 +80,7 @@ const defaultConfig = {
       name: "admin"
     }
   },
-  knockoutBracket: [],
+  knockoutBracket: knockoutBracketRounds,
   teamCompetitionTeams: [
     { id: "team-a", name: "A csapat", color: "#2f855a", soft: "#e4f4ea" },
     { id: "team-b", name: "B csapat", color: "#c26a22", soft: "#fff0dc" },
@@ -1440,38 +1504,170 @@ function normalizeBracketText(value) {
     .trim();
 }
 
+function groupPositionTeam(seed) {
+  if (!seed?.group || !seed?.rank) return "";
+  const seedGroup = normalizeBracketText(groupLabel(seed.group));
+  const group = groupStandings().find((item) => normalizeBracketText(item.group) === seedGroup);
+  return group?.rows[seed.rank - 1]?.team || "";
+}
+
+function seedLabel(seed) {
+  if (!seed) return "";
+  if (seed.groups?.length) return seed.fallback || `${seed.groups.join("/")} csoport ${seed.rank}.`;
+  const team = groupPositionTeam(seed);
+  if (team) return team;
+  return seed.fallback || `${seed.group} csoport ${seed.rank}.`;
+}
+
+function seedCandidateLabels(seed) {
+  if (!seed) return [];
+  if (seed.groups?.length) {
+    return seed.groups
+      .map((group) => groupPositionTeam({ group, rank: seed.rank }))
+      .filter(Boolean);
+  }
+  const label = seedLabel(seed);
+  return label ? [label] : [];
+}
+
+function bracketSlotByNo(no) {
+  return config.knockoutBracket.flatMap((round) => round.matches).find((slot) => slot.no === no);
+}
+
+function bracketMatchTeams(slot) {
+  if (slot.home && slot.away && typeof slot.home === "object" && typeof slot.away === "object") {
+    return {
+      home: seedLabel(slot.home),
+      away: seedLabel(slot.away),
+      homeSource: slot.home.fallback || `${slot.home.group} csoport ${slot.home.rank}.`,
+      awaySource: slot.away.fallback || `${slot.away.group} csoport ${slot.away.rank}.`
+    };
+  }
+  if (slot.home && slot.away) {
+    return {
+      home: slot.home,
+      away: slot.away,
+      homeSource: slot.home,
+      awaySource: slot.away
+    };
+  }
+  const sourceType = slot.sourceType || "winner";
+  return {
+    home: bracketParticipantLabel(slot.homeFrom, sourceType),
+    away: bracketParticipantLabel(slot.awayFrom, sourceType),
+    homeSource: `${slot.homeFrom}. meccs ${sourceType === "loser" ? "vesztese" : "győztese"}`,
+    awaySource: `${slot.awayFrom}. meccs ${sourceType === "loser" ? "vesztese" : "győztese"}`
+  };
+}
+
 function plannedMatchFor(slot) {
-  const home = normalizeBracketText(slot.home);
-  const away = normalizeBracketText(slot.away);
+  const teams = bracketMatchTeams(slot);
+  const homeCandidates = slot.home && slot.away && typeof slot.home === "object" && typeof slot.away === "object"
+    ? seedCandidateLabels(slot.home)
+    : [teams.home];
+  const awayCandidates = slot.home && slot.away && typeof slot.home === "object" && typeof slot.away === "object"
+    ? seedCandidateLabels(slot.away)
+    : [teams.away];
+  const homeSet = new Set(homeCandidates.map(normalizeBracketText).filter(Boolean));
+  const awaySet = new Set(awayCandidates.map(normalizeBracketText).filter(Boolean));
+  if (!homeSet.size || !awaySet.size) return null;
   return state.matches.find((match) => {
     if (match.stage !== "knockout") return false;
     const matchHome = normalizeBracketText(match.home);
     const matchAway = normalizeBracketText(match.away);
-    return (matchHome === home && matchAway === away) || (matchHome === away && matchAway === home);
+    return (homeSet.has(matchHome) && awaySet.has(matchAway)) || (homeSet.has(matchAway) && awaySet.has(matchHome));
   });
 }
 
-function bracketSlotHtml(slot) {
+function bracketParticipantLabel(matchNo, type = "winner") {
+  const sourceSlot = bracketSlotByNo(matchNo);
+  if (!sourceSlot) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  const sourceMatch = plannedMatchFor(sourceSlot);
+  if (!sourceMatch) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  const { result } = effectiveResultFor(sourceMatch.id);
+  if (!result) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  const winner = knockoutWinner(sourceMatch, result);
+  if (!winner) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  if (type === "winner") return winner;
+  return winner === sourceMatch.home ? sourceMatch.away : sourceMatch.home;
+}
+
+function knockoutWinner(match, result) {
+  if (!match || !result) return "";
+  if (result.qualifier) return result.qualifier;
+  const homeGoals = Number(result.homeGoals);
+  const awayGoals = Number(result.awayGoals);
+  if (homeGoals > awayGoals) return match.home;
+  if (awayGoals > homeGoals) return match.away;
+  return "";
+}
+
+function bracketTeamHtml(name, source) {
+  const showSource = normalizeBracketText(name) !== normalizeBracketText(source);
+  return `<strong>${name}</strong>${showSource ? `<small>${source}</small>` : ""}`;
+}
+
+function bracketRowForSlot(slot) {
+  if (!slot) return 1;
+  if (slot.no === 103) return bracketRowForNo(104) + 10;
+  if (!slot.homeFrom || !slot.awayFrom) {
+    const index = bracketLeafOrder.indexOf(slot.no);
+    return index >= 0 ? index * 2 + 3 : 1;
+  }
+  return (bracketRowForNo(slot.homeFrom) + bracketRowForNo(slot.awayFrom)) / 2;
+}
+
+function bracketRowForNo(matchNo) {
+  return bracketRowForSlot(bracketSlotByNo(matchNo));
+}
+
+function bracketJoinRows(slot) {
+  if (!slot?.homeFrom || !slot?.awayFrom) return 0;
+  return Math.abs(bracketRowForNo(slot.homeFrom) - bracketRowForNo(slot.awayFrom));
+}
+
+function bracketSpanForRound(roundIndex) {
+  return [2, 4, 8, 16, 8][roundIndex] || 2;
+}
+
+function bracketLayout(roundIndex, slot) {
+  const span = bracketSpanForRound(roundIndex);
+  const centerRow = bracketRowForSlot(slot);
+  return {
+    row: centerRow - span / 2,
+    span,
+    join: bracketJoinRows(slot)
+  };
+}
+
+function bracketSlotHtml(slot, matchIndex, roundIndex) {
+  const teams = bracketMatchTeams(slot);
   const match = plannedMatchFor(slot);
   const resultInfo = match ? effectiveResultFor(match.id) : { result: null, status: "" };
   const score = resultInfo.result ? `${resultInfo.result.homeGoals}-${resultInfo.result.awayGoals}` : "";
-  const qualifier = resultInfo.result?.qualifier ? `<span class="bracket-winner">Továbbjutó: ${resultInfo.result.qualifier}</span>` : "";
+  const winner = match && resultInfo.result ? knockoutWinner(match, resultInfo.result) : "";
+  const qualifier = winner ? `<span class="bracket-winner">Továbbjutó: ${winner}</span>` : "";
   const status = resultInfo.status === "approved"
     ? `<span class="pill">végleges</span>`
     : resultInfo.status === "pending"
       ? `<span class="pill warn">nem végleges</span>`
       : "";
+  const layout = bracketLayout(roundIndex, slot);
+  const terminal = roundIndex === config.knockoutBracket.length - 1 ? " bracket-terminal" : "";
+  const detached = slot.no === 103 ? " bracket-detached" : "";
+  const connector = roundIndex > 0 && !detached ? `<span class="bracket-join" aria-hidden="true"></span>` : "";
   return `
-    <article class="bracket-match">
+    <article class="bracket-match${terminal}${detached}" data-round="${roundIndex}" style="--bracket-row: ${layout.row}; --bracket-span: ${layout.span}; --join-height: ${layout.join * 74}px;">
+      ${connector}
       <div class="bracket-match-head">
         <span class="bracket-no">${slot.no}. meccs</span>
         ${slot.note ? `<span class="pill info">${slot.note}</span>` : ""}
         ${status}
       </div>
       <div class="bracket-teams">
-        <span>${match?.home || slot.home}</span>
+        <span>${bracketTeamHtml(match?.home || teams.home, teams.homeSource)}</span>
         <strong>${score || "vs"}</strong>
-        <span>${match?.away || slot.away}</span>
+        <span>${bracketTeamHtml(match?.away || teams.away, teams.awaySource)}</span>
       </div>
       ${qualifier}
     </article>`;
@@ -1481,14 +1677,14 @@ function knockoutBracketHtml() {
   return `
     <div class="bracket-scroll">
       <div class="bracket-grid">
-        ${config.knockoutBracket.map((round) => `
-          <section class="bracket-round">
+        ${config.knockoutBracket.map((round, roundIndex) => `
+          <section class="bracket-round" data-round="${roundIndex}">
             <h4>${round.title}</h4>
-            ${round.matches.map(bracketSlotHtml).join("")}
+            ${round.matches.map((slot, matchIndex) => bracketSlotHtml(slot, matchIndex, roundIndex)).join("")}
           </section>`).join("")}
       </div>
     </div>
-    <p class="muted bracket-note">A harmadik helyezetteknél a pontos csoportpárosítás attól függ, melyik nyolc harmadik helyezett jut tovább.</p>`;
+    <p class="muted bracket-note">Az ág a FIFA meccsszámain alapul. A legjobb 32-es párok a csoportállásból és a feltöltött meccsekből jönnek, a későbbi körök pedig az előző meccsek továbbjutóiból épülnek fel.</p>`;
 }
 
 function renderPlayed() {
@@ -1500,12 +1696,12 @@ function renderPlayed() {
 
   els.playedView.innerHTML = `
     <div class="panel">
-      <h3>Csoportállás</h3>
-      ${groupStandingsHtml()}
-    </div>
-    <div class="panel">
       <h3>Kieséses ág</h3>
       ${knockoutBracketHtml()}
+    </div>
+    <div class="panel">
+      <h3>Csoportállás</h3>
+      ${groupStandingsHtml()}
     </div>
     <div class="panel">
       <h3>Eredmények</h3>

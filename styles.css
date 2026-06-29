@@ -831,36 +831,80 @@ main {
 
 .bracket-scroll {
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding: 2px 0 14px;
+  scrollbar-color: rgba(28, 72, 82, 0.45) rgba(28, 72, 82, 0.08);
 }
 
 .bracket-grid {
+  --bracket-row-height: 74px;
+  --bracket-gap: 42px;
+  --bracket-branch: 22px;
+  --bracket-line: rgba(31, 68, 73, 0.38);
   display: grid;
-  grid-template-columns: 1.8fr 1.35fr 1fr 0.82fr 0.82fr;
-  gap: 12px;
-  min-width: 980px;
-  align-items: start;
+  grid-template-columns: 250px 232px 218px 204px 204px;
+  gap: var(--bracket-gap);
+  min-width: 1130px;
+  align-items: stretch;
 }
 
 .bracket-round {
+  position: relative;
   display: grid;
-  gap: 10px;
+  grid-template-rows: 30px repeat(32, var(--bracket-row-height));
+  gap: 0;
 }
 
 .bracket-round h4 {
+  grid-row: 1;
   margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
+  color: var(--ink);
+  font-size: 0.95rem;
+  padding: 0 2px 2px;
 }
 
 .bracket-match {
+  position: relative;
+  grid-row: var(--bracket-row) / span var(--bracket-span);
+  align-self: center;
+  z-index: 1;
   display: grid;
   gap: 8px;
-  min-height: 92px;
+  min-height: 86px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f7faf5;
-  padding: 10px;
+  background: linear-gradient(135deg, #fbfdf9, #eef7f1);
+  box-shadow: 0 8px 20px rgba(22, 55, 42, 0.06);
+  padding: 11px;
+}
+
+.bracket-match::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: calc(var(--bracket-branch) * -1);
+  width: var(--bracket-branch);
+  border-top: 2px solid var(--bracket-line);
+}
+
+.bracket-match.bracket-terminal::after {
+  display: none;
+}
+
+.bracket-join {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--bracket-branch) * -1);
+  width: var(--bracket-branch);
+  border-top: 2px solid var(--bracket-line);
+}
+
+.bracket-join::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: calc(var(--join-height) / -2);
+  height: var(--join-height);
+  border-left: 2px solid var(--bracket-line);
 }
 
 .bracket-match-head,
@@ -881,26 +925,43 @@ main {
 }
 
 .bracket-teams {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  justify-content: stretch;
 }
 
 .bracket-teams span {
   min-width: 0;
-  flex: 1;
-  font-weight: 750;
+  display: grid;
+  gap: 3px;
 }
 
 .bracket-teams span:last-child {
   text-align: right;
 }
 
-.bracket-teams strong {
+.bracket-teams > strong {
   color: var(--muted);
+  min-width: 32px;
+  text-align: center;
+}
+
+.bracket-teams span strong {
+  color: var(--ink);
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.bracket-teams small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
 }
 
 .bracket-winner {
   color: #155b36;
   font-weight: 800;
+  font-size: 0.86rem;
 }
 
 .bracket-note {

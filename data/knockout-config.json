@@ -1,59 +1,59 @@
 [
   {
-    "title": "32-es kör",
+    "title": "Legjobb 32",
     "matches": [
-      { "no": 73, "home": "A csoport 2.", "away": "B csoport 2." },
-      { "no": 74, "home": "E csoport 1.", "away": "A/B/C/D/F csoport 3." },
-      { "no": 75, "home": "F csoport 1.", "away": "C csoport 2." },
-      { "no": 76, "home": "C csoport 1.", "away": "F csoport 2." },
-      { "no": 77, "home": "I csoport 1.", "away": "C/D/F/G/H csoport 3." },
-      { "no": 78, "home": "E csoport 2.", "away": "I csoport 2." },
-      { "no": 79, "home": "A csoport 1.", "away": "C/E/F/H/I csoport 3." },
-      { "no": 80, "home": "L csoport 1.", "away": "E/H/I/J/K csoport 3." },
-      { "no": 81, "home": "D csoport 1.", "away": "B/E/F/I/J csoport 3." },
-      { "no": 82, "home": "G csoport 1.", "away": "A/E/H/I/J csoport 3." },
-      { "no": 83, "home": "K csoport 2.", "away": "L csoport 2." },
-      { "no": 84, "home": "H csoport 1.", "away": "J csoport 2." },
-      { "no": 85, "home": "B csoport 1.", "away": "E/F/G/I/J csoport 3." },
-      { "no": 86, "home": "J csoport 1.", "away": "H csoport 2." },
-      { "no": 87, "home": "K csoport 1.", "away": "D/E/I/J/L csoport 3." },
-      { "no": 88, "home": "D csoport 2.", "away": "G csoport 2." }
+      { "no": 73, "home": { "group": "A", "rank": 2 }, "away": { "group": "B", "rank": 2 } },
+      { "no": 74, "home": { "group": "E", "rank": 1 }, "away": { "groups": ["A", "B", "C", "D", "F"], "rank": 3, "fallback": "A/B/C/D/F csoport 3." } },
+      { "no": 75, "home": { "group": "F", "rank": 1 }, "away": { "group": "C", "rank": 2 } },
+      { "no": 76, "home": { "group": "C", "rank": 1 }, "away": { "group": "F", "rank": 2 } },
+      { "no": 77, "home": { "group": "I", "rank": 1 }, "away": { "groups": ["C", "D", "F", "G", "H"], "rank": 3, "fallback": "C/D/F/G/H csoport 3." } },
+      { "no": 78, "home": { "group": "E", "rank": 2 }, "away": { "group": "I", "rank": 2 } },
+      { "no": 79, "home": { "group": "A", "rank": 1 }, "away": { "groups": ["C", "E", "F", "H", "I"], "rank": 3, "fallback": "C/E/F/H/I csoport 3." } },
+      { "no": 80, "home": { "group": "L", "rank": 1 }, "away": { "groups": ["E", "H", "I", "J", "K"], "rank": 3, "fallback": "E/H/I/J/K csoport 3." } },
+      { "no": 81, "home": { "group": "D", "rank": 1 }, "away": { "groups": ["B", "E", "F", "I", "J"], "rank": 3, "fallback": "B/E/F/I/J csoport 3." } },
+      { "no": 82, "home": { "group": "G", "rank": 1 }, "away": { "groups": ["A", "E", "H", "I", "J"], "rank": 3, "fallback": "A/E/H/I/J csoport 3." } },
+      { "no": 83, "home": { "group": "K", "rank": 2 }, "away": { "group": "L", "rank": 2 } },
+      { "no": 84, "home": { "group": "H", "rank": 1 }, "away": { "group": "J", "rank": 2 } },
+      { "no": 85, "home": { "group": "B", "rank": 1 }, "away": { "groups": ["E", "F", "G", "I", "J"], "rank": 3, "fallback": "E/F/G/I/J csoport 3." } },
+      { "no": 86, "home": { "group": "J", "rank": 1 }, "away": { "group": "H", "rank": 2 } },
+      { "no": 87, "home": { "group": "K", "rank": 1 }, "away": { "groups": ["D", "E", "I", "J", "L"], "rank": 3, "fallback": "D/E/I/J/L csoport 3." } },
+      { "no": 88, "home": { "group": "D", "rank": 2 }, "away": { "group": "G", "rank": 2 } }
     ]
   },
   {
     "title": "Nyolcaddöntő",
     "matches": [
-      { "no": 89, "home": "73. meccs győztese", "away": "75. meccs győztese" },
-      { "no": 90, "home": "74. meccs győztese", "away": "77. meccs győztese" },
-      { "no": 91, "home": "76. meccs győztese", "away": "78. meccs győztese" },
-      { "no": 92, "home": "79. meccs győztese", "away": "80. meccs győztese" },
-      { "no": 93, "home": "83. meccs győztese", "away": "84. meccs győztese" },
-      { "no": 94, "home": "81. meccs győztese", "away": "82. meccs győztese" },
-      { "no": 95, "home": "86. meccs győztese", "away": "88. meccs győztese" },
-      { "no": 96, "home": "85. meccs győztese", "away": "87. meccs győztese" }
+      { "no": 89, "homeFrom": 73, "awayFrom": 75 },
+      { "no": 90, "homeFrom": 74, "awayFrom": 77 },
+      { "no": 91, "homeFrom": 76, "awayFrom": 78 },
+      { "no": 92, "homeFrom": 79, "awayFrom": 80 },
+      { "no": 93, "homeFrom": 83, "awayFrom": 84 },
+      { "no": 94, "homeFrom": 81, "awayFrom": 82 },
+      { "no": 95, "homeFrom": 86, "awayFrom": 88 },
+      { "no": 96, "homeFrom": 85, "awayFrom": 87 }
     ]
   },
   {
     "title": "Negyeddöntő",
     "matches": [
-      { "no": 97, "home": "89. meccs győztese", "away": "90. meccs győztese" },
-      { "no": 98, "home": "93. meccs győztese", "away": "94. meccs győztese" },
-      { "no": 99, "home": "91. meccs győztese", "away": "92. meccs győztese" },
-      { "no": 100, "home": "95. meccs győztese", "away": "96. meccs győztese" }
+      { "no": 97, "homeFrom": 89, "awayFrom": 90 },
+      { "no": 98, "homeFrom": 93, "awayFrom": 94 },
+      { "no": 99, "homeFrom": 91, "awayFrom": 92 },
+      { "no": 100, "homeFrom": 95, "awayFrom": 96 }
     ]
   },
   {
     "title": "Elődöntő",
     "matches": [
-      { "no": 101, "home": "97. meccs győztese", "away": "98. meccs győztese" },
-      { "no": 102, "home": "99. meccs győztese", "away": "100. meccs győztese" }
+      { "no": 101, "homeFrom": 97, "awayFrom": 98 },
+      { "no": 102, "homeFrom": 99, "awayFrom": 100 }
     ]
   },
   {
     "title": "Döntők",
     "matches": [
-      { "no": 103, "home": "101. meccs vesztese", "away": "102. meccs vesztese", "note": "Bronzmeccs" },
-      { "no": 104, "home": "101. meccs győztese", "away": "102. meccs győztese", "note": "Döntő" }
+      { "no": 103, "homeFrom": 101, "awayFrom": 102, "sourceType": "loser", "note": "Bronzmeccs" },
+      { "no": 104, "homeFrom": 101, "awayFrom": 102, "note": "Döntő" }
     ]
   }
 ]
