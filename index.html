@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="hu">
   <head>
     <meta charset="utf-8" />
@@ -14,7 +14,7 @@
     <link rel="shortcut icon" type="image/png" href="assets/icon-192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png" />
-    <link rel="stylesheet" href="styles.css?v=51" />
+    <link rel="stylesheet" href="styles.css?v=52" />
   </head>
   <body>
     <div class="app-shell">
@@ -25,7 +25,7 @@
           <div class="brand">
             <span class="brand-mark">26</span>
             <span>VB TippLiga</span>
-            <span class="app-version">v51</span>
+            <span class="app-version">v52</span>
           </div>
           <div id="sessionBox" class="session-box"></div>
         </nav>
@@ -33,7 +33,7 @@
           <p class="eyebrow">Szalai tippverseny</p>
           <h1>VB TippLiga 2026</h1>
           <p class="hero-copy">
-            Tippelj a meccsekre, kövesd a tabellát, és élvezd a játékot
+            Tippelj a meccsekre, kÃ¶vesd a tabellÃ¡t, Ã©s Ã©lvezd a jÃ¡tÃ©kot
           </p>
         </section>
       </header>
@@ -42,19 +42,19 @@
         <section id="loginPanel" class="login-panel">
           <form id="loginForm" class="login-form">
             <label>
-              Név
-              <input id="loginName" type="text" autocomplete="name" required placeholder="pl. Máté" />
+              NÃ©v
+              <input id="loginName" type="text" autocomplete="name" required placeholder="pl. MÃ¡tÃ©" />
             </label>
             <label>
-              Jelszó
-              <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="gagyi jelszó" />
+              JelszÃ³
+              <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="gagyi jelszÃ³" />
             </label>
             <div class="login-actions">
-              <button type="submit" name="mode" value="login">Belépés</button>
+              <button type="submit" name="mode" value="login">BelÃ©pÃ©s</button>
             </div>
             <div class="register-entry">
-              <span>Van már fiókod, de nem emlékszel a jelszóra?</span>
-              <button id="openPasswordResetBtn" class="secondary" type="button">Elfelejtett jelszó</button>
+              <span>Van mÃ¡r fiÃ³kod, de nem emlÃ©kszel a jelszÃ³ra?</span>
+              <button id="openPasswordResetBtn" class="secondary" type="button">Elfelejtett jelszÃ³</button>
             </div>
             <p id="loginMessage" class="form-message"></p>
           </form>
@@ -63,7 +63,7 @@
         <section id="dashboard" class="dashboard hidden">
           <div class="dashboard-head">
             <div>
-              <p class="section-kicker">Tippközpont</p>
+              <p class="section-kicker">TippkÃ¶zpont</p>
               <h2 id="welcomeTitle">Szia!</h2>
             </div>
             <div class="score-strip">
@@ -72,7 +72,7 @@
                 <span id="myScore">0</span>
               </div>
               <div>
-                <small>jóváhagyásra vár:</small>
+                <small>jÃ³vÃ¡hagyÃ¡sra vÃ¡r:</small>
                 <span id="pendingCount">0</span>
               </div>
             </div>
@@ -80,12 +80,12 @@
 
           <section id="passwordGate" class="password-gate hidden"></section>
 
-          <div id="mainTabs" class="tabs" role="tablist" aria-label="Nézetek">
+          <div id="mainTabs" class="tabs" role="tablist" aria-label="NÃ©zetek">
             <button class="tab active player-only" data-view="matches" type="button">Tippelek!</button>
-            <button class="tab player-only" data-view="myTips" type="button">Korábbi Tippek</button>
+            <button class="tab player-only" data-view="myTips" type="button">KorÃ¡bbi Tippek</button>
             <button class="tab" data-view="standings" type="button">Tabella</button>
-            <button class="tab" data-view="played" type="button">VB állás</button>
-            <button class="tab" data-view="results" type="button">Eredmény feltöltése</button>
+            <button class="tab" data-view="played" type="button">VB Ã¡llÃ¡s</button>
+            <button class="tab" data-view="results" type="button">EredmÃ©ny feltÃ¶ltÃ©se</button>
             <button class="tab admin-only hidden" data-view="tips" type="button">Minden tipp</button>
             <button class="tab admin-only hidden" data-view="admin" type="button">Admin</button>
           </div>
@@ -116,15 +116,15 @@
         <form class="prediction-form">
           <div class="score-inputs">
             <label>Hazai <input name="homeGoals" type="number" min="0" max="20" required /></label>
-            <label>Vendég <input name="awayGoals" type="number" min="0" max="20" required /></label>
+            <label>VendÃ©g <input name="awayGoals" type="number" min="0" max="20" required /></label>
           </div>
           <label class="qualifier-row hidden">
-            Továbbjutó döntetlen tippnél
+            TovÃ¡bbjutÃ³ dÃ¶ntetlen tippnÃ©l
             <select name="qualifier">
-              <option value="">Válassz továbbjutót</option>
+              <option value="">VÃ¡lassz tovÃ¡bbjutÃ³t</option>
             </select>
           </label>
-          <button type="submit">Tipp mentése</button>
+          <button type="submit">Tipp mentÃ©se</button>
         </form>
         <div class="history-grid"></div>
       </article>
@@ -133,17 +133,17 @@
     <dialog id="passwordResetDialog" class="modal">
       <form id="passwordResetForm" class="modal-card">
         <div>
-          <p class="section-kicker">Jelszó</p>
-          <h2>Új jelszó kérése</h2>
+          <p class="section-kicker">JelszÃ³</p>
+          <h2>Ãšj jelszÃ³ kÃ©rÃ©se</h2>
         </div>
         <label>
-          Felhasználónév
-          <input id="passwordResetName" type="text" autocomplete="username" required placeholder="pl. Máté" />
+          FelhasznÃ¡lÃ³nÃ©v
+          <input id="passwordResetName" type="text" autocomplete="username" required placeholder="pl. MÃ¡tÃ©" />
         </label>
-        <p class="muted">A kérés az adminoknak fog megjelenni. Ők állítanak be neked új jelszót.</p>
+        <p class="muted">A kÃ©rÃ©s az adminoknak fog megjelenni. Åk Ã¡llÃ­tanak be neked Ãºj jelszÃ³t.</p>
         <div class="login-actions">
-          <button type="submit">Kérés elküldése</button>
-          <button id="closePasswordResetBtn" class="secondary" type="button">Mégse</button>
+          <button type="submit">KÃ©rÃ©s elkÃ¼ldÃ©se</button>
+          <button id="closePasswordResetBtn" class="secondary" type="button">MÃ©gse</button>
         </div>
         <p id="passwordResetMessage" class="form-message"></p>
       </form>
@@ -152,13 +152,13 @@
     <dialog id="whatsNewDialog" class="modal whats-new-modal">
       <section class="modal-card">
         <div>
-          <p class="section-kicker">v51</p>
-          <h2>Újdonságok</h2>
+          <p class="section-kicker">v52</p>
+          <h2>ÃšjdonsÃ¡gok</h2>
         </div>
         <ul class="whats-new-list">
-          <li>A VB állás fülön az ágrajz már a tényleges fa szerinti sorrendben jelenik meg.</li>
-          <li>Az összekötő vonalak a két forrásmeccs között futnak össze, majd onnan mennek tovább a következő körbe.</li>
-          <li>A fa továbbra is automatikusan épül a feltöltött meccsek és eredmények alapján.</li>
+          <li>A VB Ã¡llÃ¡s fÃ¼lÃ¶n az Ã¡grajz mÃ¡r a tÃ©nyleges fa szerinti sorrendben jelenik meg.</li>
+          <li>Az Ã¶sszekÃ¶tÅ‘ vonalak a kÃ©t forrÃ¡smeccs kÃ¶zÃ¶tt futnak Ã¶ssze, majd onnan mennek tovÃ¡bb a kÃ¶vetkezÅ‘ kÃ¶rbe.</li>
+          <li>A fa tovÃ¡bbra is automatikusan Ã©pÃ¼l a feltÃ¶ltÃ¶tt meccsek Ã©s eredmÃ©nyek alapjÃ¡n.</li>
         </ul>
         <div class="login-actions">
           <button id="closeWhatsNewBtn" type="button">Rendben</button>
@@ -166,10 +166,10 @@
       </section>
     </dialog>
 
-    <button id="scrollTopBtn" class="scroll-top-button" type="button" aria-label="Vissza a tetejére">
+    <button id="scrollTopBtn" class="scroll-top-button" type="button" aria-label="Vissza a tetejÃ©re">
       <img src="assets/scroll-top.png" alt="" />
     </button>
 
-    <script src="app.js?v=51"></script>
+    <script src="app.js?v=52"></script>
   </body>
 </html>

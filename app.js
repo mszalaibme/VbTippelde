@@ -1,9 +1,9 @@
-const STORAGE_KEY = "vb-tippliga-2026-v4";
+﻿const STORAGE_KEY = "vb-tippliga-2026-v4";
 const CURRENT_USER_KEY = "vb-tippliga-current-user-v4";
 const CURRENT_USER_NAME_KEY = "vb-tippliga-current-user-name-v1";
 const CURRENT_USER_COOKIE = "vb_tippliga_current_user";
 const REMINDER_KEY = "vb-tippliga-reminders-v1";
-const APP_VERSION = "v51";
+const APP_VERSION = "v52";
 const WHATS_NEW_KEY = "vb-tippliga-whats-new";
 const PASSWORD_ITERATIONS = 150000;
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
@@ -47,7 +47,7 @@ const knockoutBracketRounds = [
     matches: roundOf32Slots
   },
   {
-    title: "Nyolcaddöntő",
+    title: "NyolcaddÃ¶ntÅ‘",
     matches: [
       { no: 89, homeFrom: 73, awayFrom: 75 },
       { no: 90, homeFrom: 74, awayFrom: 77 },
@@ -60,7 +60,7 @@ const knockoutBracketRounds = [
     ]
   },
   {
-    title: "Negyeddöntő",
+    title: "NegyeddÃ¶ntÅ‘",
     matches: [
       { no: 97, homeFrom: 89, awayFrom: 90 },
       { no: 98, homeFrom: 93, awayFrom: 94 },
@@ -69,17 +69,17 @@ const knockoutBracketRounds = [
     ]
   },
   {
-    title: "Elődöntő",
+    title: "ElÅ‘dÃ¶ntÅ‘",
     matches: [
       { no: 101, homeFrom: 97, awayFrom: 98 },
       { no: 102, homeFrom: 99, awayFrom: 100 }
     ]
   },
   {
-    title: "Döntők",
+    title: "DÃ¶ntÅ‘k",
     matches: [
       { no: 103, homeFrom: 101, awayFrom: 102, sourceType: "loser", note: "Bronzmeccs" },
-      { no: 104, homeFrom: 101, awayFrom: 102, note: "Döntő" }
+      { no: 104, homeFrom: 101, awayFrom: 102, note: "DÃ¶ntÅ‘" }
     ]
   }
 ];
@@ -335,7 +335,7 @@ function base64ToBytes(value) {
 
 async function hashPassword(password, saltBase64) {
   if (shouldUseServerStorage() || !hasWebCrypto()) {
-    throw new Error("A böngésző ezen a címen nem támogatja a biztonságos helyi jelszókezelést.");
+    throw new Error("A bÃ¶ngÃ©szÅ‘ ezen a cÃ­men nem tÃ¡mogatja a biztonsÃ¡gos helyi jelszÃ³kezelÃ©st.");
   }
   const salt = saltBase64 ? base64ToBytes(saltBase64) : crypto.getRandomValues(new Uint8Array(16));
   const keyMaterial = await crypto.subtle.importKey(
@@ -370,17 +370,17 @@ async function apiPost(path, payload) {
       body: JSON.stringify(payload)
     });
   } catch (error) {
-    throw new Error("Nem sikerült elérni a szervert. Frissítsd az oldalt, vagy ellenőrizd, hogy fut-e az API.");
+    throw new Error("Nem sikerÃ¼lt elÃ©rni a szervert. FrissÃ­tsd az oldalt, vagy ellenÅ‘rizd, hogy fut-e az API.");
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("Az API végpont nem található. A Caddy valószínűleg nem proxyzza a /api kéréseket a Node szerverre.");
+      throw new Error("Az API vÃ©gpont nem talÃ¡lhatÃ³. A Caddy valÃ³szÃ­nÅ±leg nem proxyzza a /api kÃ©rÃ©seket a Node szerverre.");
     }
     if (response.status === 405) {
-      throw new Error("Az API végpont nem fogadja ezt a kérést. Ellenőrizd a Caddy proxyzást és a futó Node szervert.");
+      throw new Error("Az API vÃ©gpont nem fogadja ezt a kÃ©rÃ©st. EllenÅ‘rizd a Caddy proxyzÃ¡st Ã©s a futÃ³ Node szervert.");
     }
-    throw new Error(data.error || `A szerver nem tudta feldolgozni a kérést. (${response.status})`);
+    throw new Error(data.error || `A szerver nem tudta feldolgozni a kÃ©rÃ©st. (${response.status})`);
   }
   return data;
 }
@@ -396,7 +396,7 @@ async function ensureServerPasswordApi() {
   if (serverSyncAvailable) return;
   await loadServerState();
   if (!serverSyncAvailable) {
-    throw new Error("Nem sikerült kapcsolódni az API-hoz. Frissítsd az oldalt, vagy ellenőrizd a szervert.");
+    throw new Error("Nem sikerÃ¼lt kapcsolÃ³dni az API-hoz. FrissÃ­tsd az oldalt, vagy ellenÅ‘rizd a szervert.");
   }
 }
 
@@ -440,10 +440,10 @@ async function verifyPassword(user, password) {
 async function createUserByAdmin(name, password, isAdmin) {
   const admin = getUser();
   const normalized = name.trim();
-  if (!admin?.isAdmin) throw new Error("Nincs jogosultság felhasználó létrehozásához.");
-  if (!normalized || !password) throw new Error("Név és jelszó is kell.");
+  if (!admin?.isAdmin) throw new Error("Nincs jogosultsÃ¡g felhasznÃ¡lÃ³ lÃ©trehozÃ¡sÃ¡hoz.");
+  if (!normalized || !password) throw new Error("NÃ©v Ã©s jelszÃ³ is kell.");
   if (state.users.some((item) => item.name.toLowerCase() === normalized.toLowerCase())) {
-    throw new Error("Ez a név már létezik.");
+    throw new Error("Ez a nÃ©v mÃ¡r lÃ©tezik.");
   }
   const user = {
     id: createId(),
@@ -498,8 +498,8 @@ async function loginUser(name, password) {
     return systemAdminUser();
   }
   const user = state.users.find((item) => item.name.toLowerCase() === normalized.toLowerCase());
-  if (!user) throw new Error("Nincs ilyen felhasználó.");
-  if (!(await verifyPassword(user, password))) throw new Error("Hibás jelszó.");
+  if (!user) throw new Error("Nincs ilyen felhasznÃ¡lÃ³.");
+  if (!(await verifyPassword(user, password))) throw new Error("HibÃ¡s jelszÃ³.");
   return user;
 }
 
@@ -577,7 +577,7 @@ function pendingPredictionFor(userId, matchId) {
 
 function predictionSummary(prediction) {
   if (!prediction) return "";
-  const qualifier = prediction.qualifier ? `, továbbjutó: ${prediction.qualifier}` : "";
+  const qualifier = prediction.qualifier ? `, tovÃ¡bbjutÃ³: ${prediction.qualifier}` : "";
   return `${prediction.homeGoals}-${prediction.awayGoals}${qualifier}`;
 }
 
@@ -621,12 +621,12 @@ function missingTipsHtml(rows, emptyMessage) {
         <div>
           <span class="pill warn">nincs tipp</span>
           <strong>${user.name}: ${resultLabel}</strong>
-          ${result?.qualifier ? `<span>Továbbjutó: ${result.qualifier}</span>` : ""}
-          ${!result ? `<span class="muted">Még nincs eredmény rögzítve.</span>` : ""}
-          <span>${formatDate(match.kickoff)} · ${match.label}</span>
+          ${result?.qualifier ? `<span>TovÃ¡bbjutÃ³: ${result.qualifier}</span>` : ""}
+          ${!result ? `<span class="muted">MÃ©g nincs eredmÃ©ny rÃ¶gzÃ­tve.</span>` : ""}
+          <span>${formatDate(match.kickoff)} Â· ${match.label}</span>
         </div>
         <div class="approval-actions">
-          <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltöltése</button>
+          <button type="button" data-fill-missing-tip="${user.id}:${match.id}">Tipp feltÃ¶ltÃ©se</button>
           <button class="secondary" type="button" data-hide-missing-tip="${user.id}:${match.id}">Elrejt</button>
         </div>
       </div>`;
@@ -866,19 +866,19 @@ function renderSession(user) {
     return;
   }
   els.sessionBox.innerHTML = `
-    <span>${user.name}${user.isAdmin ? " · admin" : ""}</span>
+    <span>${user.name}${user.isAdmin ? " Â· admin" : ""}</span>
     ${user.isSystemAdmin ? "" : `<details class="password-menu">
-      <summary>Jelszó</summary>
+      <summary>JelszÃ³</summary>
       <form id="sessionPasswordForm">
-        ${passwordFieldHtml("oldPassword", "Régi jelszó", "current-password")}
-        ${passwordFieldHtml("newPassword", "Új jelszó", "new-password")}
-        ${passwordFieldHtml("newPasswordConfirm", "Új jelszó még egyszer", "new-password")}
-        <button class="password-save" type="submit">Jelszó mentése</button>
+        ${passwordFieldHtml("oldPassword", "RÃ©gi jelszÃ³", "current-password")}
+        ${passwordFieldHtml("newPassword", "Ãšj jelszÃ³", "new-password")}
+        ${passwordFieldHtml("newPasswordConfirm", "Ãšj jelszÃ³ mÃ©g egyszer", "new-password")}
+        <button class="password-save" type="submit">JelszÃ³ mentÃ©se</button>
         <p class="form-message"></p>
       </form>
     </details>`}
-    <button type="button" id="notificationsBtn">${notificationsEnabled() ? "Értesítések: be" : "Értesítések"}</button>
-    <button type="button" id="logoutBtn">Kilépés</button>`;
+    <button type="button" id="notificationsBtn">${notificationsEnabled() ? "Ã‰rtesÃ­tÃ©sek: be" : "Ã‰rtesÃ­tÃ©sek"}</button>
+    <button type="button" id="logoutBtn">KilÃ©pÃ©s</button>`;
   document.querySelector("#sessionPasswordForm")?.addEventListener("submit", changeOwnPassword);
   document.querySelector("#notificationsBtn").addEventListener("click", enableMatchNotifications);
   document.querySelector("#logoutBtn").addEventListener("click", logoutUser);
@@ -892,7 +892,7 @@ function passwordFieldHtml(name, label, autocomplete = "off") {
       <span>${label}</span>
       <span class="password-input-wrap">
         <input name="${name}" type="password" autocomplete="${autocomplete}" required />
-        <button class="password-toggle" type="button" data-toggle-password="${name}" aria-label="${label} megjelenítése">Mutat</button>
+        <button class="password-toggle" type="button" data-toggle-password="${name}" aria-label="${label} megjelenÃ­tÃ©se">Mutat</button>
       </span>
     </label>`;
 }
@@ -905,7 +905,7 @@ function setupPasswordToggles(root) {
       const show = input.type === "password";
       input.type = show ? "text" : "password";
       button.textContent = show ? "Rejt" : "Mutat";
-      button.setAttribute("aria-label", show ? "Jelszó elrejtése" : "Jelszó megjelenítése");
+      button.setAttribute("aria-label", show ? "JelszÃ³ elrejtÃ©se" : "JelszÃ³ megjelenÃ­tÃ©se");
     });
   });
 }
@@ -920,13 +920,13 @@ function renderPasswordGate(user) {
   els.passwordGate.innerHTML = `
     <div class="password-gate-backdrop" role="presentation"></div>
     <div class="modal-card password-gate-panel" role="dialog" aria-modal="true" aria-labelledby="forcedPasswordTitle">
-      <p class="section-kicker">Első belépés</p>
-      <h2 id="forcedPasswordTitle">Jelszó módosítása szükséges</h2>
-      <p class="muted">Az első belépés után új jelszót kell beállítanod. Addig nem tudod használni az oldalt.</p>
+      <p class="section-kicker">ElsÅ‘ belÃ©pÃ©s</p>
+      <h2 id="forcedPasswordTitle">JelszÃ³ mÃ³dosÃ­tÃ¡sa szÃ¼ksÃ©ges</h2>
+      <p class="muted">Az elsÅ‘ belÃ©pÃ©s utÃ¡n Ãºj jelszÃ³t kell beÃ¡llÃ­tanod. Addig nem tudod hasznÃ¡lni az oldalt.</p>
       <form id="forcedPasswordForm" class="admin-prediction-form">
-        ${passwordFieldHtml("newPassword", "Új jelszó", "new-password")}
-        ${passwordFieldHtml("newPasswordConfirm", "Új jelszó még egyszer", "new-password")}
-        <button class="password-save" type="submit">Jelszó mentése</button>
+        ${passwordFieldHtml("newPassword", "Ãšj jelszÃ³", "new-password")}
+        ${passwordFieldHtml("newPasswordConfirm", "Ãšj jelszÃ³ mÃ©g egyszer", "new-password")}
+        <button class="password-save" type="submit">JelszÃ³ mentÃ©se</button>
         <p class="form-message"></p>
       </form>
     </div>`;
@@ -967,14 +967,14 @@ function logoutUser() {
 
 async function enableMatchNotifications() {
   if (!("Notification" in window)) {
-    alert("Ez a böngésző nem támogatja az értesítéseket.");
+    alert("Ez a bÃ¶ngÃ©szÅ‘ nem tÃ¡mogatja az Ã©rtesÃ­tÃ©seket.");
     return;
   }
   const permission = Notification.permission === "granted"
     ? "granted"
     : await Notification.requestPermission();
   if (permission !== "granted") {
-    alert("Az értesítések nincsenek engedélyezve.");
+    alert("Az Ã©rtesÃ­tÃ©sek nincsenek engedÃ©lyezve.");
     return;
   }
   localStorage.setItem(REMINDER_KEY, "enabled");
@@ -995,8 +995,8 @@ function markReminderSent(matchId) {
 }
 
 async function showMatchNotification(match) {
-  const title = "Meccs kezdődik 1 óra múlva";
-  const body = `${match.home} - ${match.away} · ${formatDate(match.kickoff)}`;
+  const title = "Meccs kezdÅ‘dik 1 Ã³ra mÃºlva";
+  const body = `${match.home} - ${match.away} Â· ${formatDate(match.kickoff)}`;
   try {
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
@@ -1059,12 +1059,12 @@ function renderMatches() {
       node.querySelector(".away").textContent = match.away;
       node.querySelector(".status-line").innerHTML = statusHtml(match, prediction, resultInfo, locked);
       if (pendingPrediction) {
-        node.querySelector(".status-line").insertAdjacentHTML("beforeend", `<span class="pill warn">Tippmódosítás jóváhagyásra vár</span>`);
+        node.querySelector(".status-line").insertAdjacentHTML("beforeend", `<span class="pill warn">TippmÃ³dosÃ­tÃ¡s jÃ³vÃ¡hagyÃ¡sra vÃ¡r</span>`);
         node.querySelector(".status-line").insertAdjacentHTML("afterend", `
           <div class="pending-tip-box">
-            <strong>Leadott módosításod:</strong>
+            <strong>Leadott mÃ³dosÃ­tÃ¡sod:</strong>
             <span>${predictionSummary(pendingPrediction)}</span>
-            <small>Ez még nem számít bele a pontjaidba, amíg admin jóvá nem hagyja.</small>
+            <small>Ez mÃ©g nem szÃ¡mÃ­t bele a pontjaidba, amÃ­g admin jÃ³vÃ¡ nem hagyja.</small>
           </div>`);
       }
       node.querySelector(".history-grid").innerHTML = historyHtml(match);
@@ -1076,7 +1076,7 @@ function renderMatches() {
       predictionForm.homeGoals.disabled = locked;
       predictionForm.awayGoals.disabled = locked;
       const predictionButton = predictionForm.querySelector("button");
-      predictionButton.textContent = shownPrediction ? "Tipp módosítása" : "Tipp mentése";
+      predictionButton.textContent = shownPrediction ? "Tipp mÃ³dosÃ­tÃ¡sa" : "Tipp mentÃ©se";
       predictionButton.classList.toggle("edit-mode", Boolean(shownPrediction));
       predictionButton.disabled = locked;
       fillQualifierSelect(predictionForm.qualifier, match);
@@ -1090,29 +1090,29 @@ function renderMatches() {
     });
 
   if (!grid.children.length) {
-    grid.innerHTML = `<p class="empty">Nincs aktuálisan tippelhető meccs.</p>`;
+    grid.innerHTML = `<p class="empty">Nincs aktuÃ¡lisan tippelhetÅ‘ meccs.</p>`;
   }
 }
 
 function statusHtml(match, prediction, resultInfo, locked) {
   const chunks = [];
   const result = resultInfo.result;
-  chunks.push(`<span class="pill ${locked ? "warn" : "info"}">${locked ? "Tippelés lezárva" : "Nyitott meccs"}</span>`);
+  chunks.push(`<span class="pill ${locked ? "warn" : "info"}">${locked ? "TippelÃ©s lezÃ¡rva" : "Nyitott meccs"}</span>`);
   if (prediction) {
-    const qualifier = prediction.qualifier ? `, továbbjutó: ${prediction.qualifier}` : "";
+    const qualifier = prediction.qualifier ? `, tovÃ¡bbjutÃ³: ${prediction.qualifier}` : "";
     const score = predictionScoreDetails(prediction);
     chunks.push(`<span>Mentett tipped: <strong>${prediction.homeGoals}-${prediction.awayGoals}</strong>${qualifier}</span>`);
     if (result && resultInfo.status === "approved") chunks.push(`<span class="pill">Pont: ${score.points}</span>`);
-    if (getUser()?.isAdmin) chunks.push(`<span>Időbélyeg: ${formatStamp(prediction.updatedAt)}</span>`);
+    if (getUser()?.isAdmin) chunks.push(`<span>IdÅ‘bÃ©lyeg: ${formatStamp(prediction.updatedAt)}</span>`);
   } else {
-    chunks.push("<span>Még nincs tipped.</span>");
+    chunks.push("<span>MÃ©g nincs tipped.</span>");
   }
   if (result) {
     if (resultInfo.status === "pending") {
-      chunks.push(`<span class="pill warn">Eredmény hozzáadva, jóváhagyásra vár</span>`);
+      chunks.push(`<span class="pill warn">EredmÃ©ny hozzÃ¡adva, jÃ³vÃ¡hagyÃ¡sra vÃ¡r</span>`);
     } else {
-      const qualifier = result.qualifier ? `, továbbjutó: ${result.qualifier}` : "";
-      chunks.push(`<span class="pill">Jóváhagyott: ${result.homeGoals}-${result.awayGoals}${qualifier}</span>`);
+      const qualifier = result.qualifier ? `, tovÃ¡bbjutÃ³: ${result.qualifier}` : "";
+      chunks.push(`<span class="pill">JÃ³vÃ¡hagyott: ${result.homeGoals}-${result.awayGoals}${qualifier}</span>`);
     }
   }
   return chunks.join("");
@@ -1127,12 +1127,12 @@ function historyHtml(match) {
       });
       return `
         <div class="history-panel">
-          <h3>${team} korábbi meccsei</h3>
+          <h3>${team} korÃ¡bbi meccsei</h3>
           ${
             rows.map(({ result, match: played }) => {
-              const qualifier = result.qualifier ? `, továbbjutó: ${result.qualifier}` : "";
+              const qualifier = result.qualifier ? `, tovÃ¡bbjutÃ³: ${result.qualifier}` : "";
               return `<p><strong>${played.home} ${result.homeGoals}-${result.awayGoals} ${played.away}</strong><span>${formatDate(played.kickoff)}${qualifier}</span></p>`;
-            }).join("") || `<p class="muted">Még nincs korábbi jóváhagyott eredmény.</p>`
+            }).join("") || `<p class="muted">MÃ©g nincs korÃ¡bbi jÃ³vÃ¡hagyott eredmÃ©ny.</p>`
           }
         </div>`;
     })
@@ -1140,7 +1140,11 @@ function historyHtml(match) {
 }
 
 function fillQualifierSelect(select, match) {
+  const currentValue = select.value;
   select.innerHTML = `<option value="">Válassz továbbjutót</option><option value="${match.home}">${match.home}</option><option value="${match.away}">${match.away}</option>`;
+  if (currentValue === match.home || currentValue === match.away) {
+    select.value = currentValue;
+  }
 }
 
 function updatePredictionQualifierVisibility(form, match) {
@@ -1253,7 +1257,7 @@ function submitResult(event) {
 function renderStandings() {
   const content = standingsMode === "teams" ? teamStandingsHtml() : playerStandingsHtml();
   els.standingsView.innerHTML = `
-    <div class="standings-switch" role="tablist" aria-label="Tabella nézetek">
+    <div class="standings-switch" role="tablist" aria-label="Tabella nÃ©zetek">
       <button type="button" class="${standingsMode === "players" ? "active" : ""}" data-standings-mode="players">
         <span>Sima tabella</span>
       </button>
@@ -1275,9 +1279,9 @@ function playerStandingsHtml() {
   return `
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>Név</th><th>Pont</th><th>Telitalálat</th><th>Tippek száma</th></tr></thead>
+        <thead><tr><th>#</th><th>NÃ©v</th><th>Pont</th><th>TelitalÃ¡lat</th><th>Tippek szÃ¡ma</th></tr></thead>
         <tbody>
-          ${rows.map((row, index) => `<tr><td>${index + 1}</td><td><strong>${row.user.name}</strong>${row.user.isAdmin ? " · admin" : ""}</td><td><strong>${row.points}</strong>${row.provisional ? `<br><span class="pill warn">nem végleges</span>` : ""}</td><td>${row.exact}</td><td>${row.predictions}</td></tr>`).join("") || `<tr><td colspan="5" class="empty">Még nincs versenyző.</td></tr>`}
+          ${rows.map((row, index) => `<tr><td>${index + 1}</td><td><strong>${row.user.name}</strong>${row.user.isAdmin ? " Â· admin" : ""}</td><td><strong>${row.points}</strong>${row.provisional ? `<br><span class="pill warn">nem vÃ©gleges</span>` : ""}</td><td>${row.exact}</td><td>${row.predictions}</td></tr>`).join("") || `<tr><td colspan="5" class="empty">MÃ©g nincs versenyzÅ‘.</td></tr>`}
         </tbody>
       </table>
     </div>`;
@@ -1293,27 +1297,27 @@ function teamStandingsHtml() {
             <span class="team-rank">#${index + 1}</span>
             <div>
               <h3>${row.team.name}</h3>
-              <p>${row.members.length ? row.members.map((member) => member.name).join(", ") : "Még nincs játékos ebben a csapatban."}</p>
+              <p>${row.members.length ? row.members.map((member) => member.name).join(", ") : "MÃ©g nincs jÃ¡tÃ©kos ebben a csapatban."}</p>
             </div>
             <strong>${row.points}</strong>
           </div>
           <div class="team-standing-meta">
-            <span>${row.exact} telitalálat</span>
+            <span>${row.exact} telitalÃ¡lat</span>
             ${
               row.isLeader
                 ? `<span class="leader-streak">${row.leaderStreak} meccse vezet</span>`
                 : row.isTiedLeader
-                ? `<span class="leader-streak">holtversenyben első</span>`
+                ? `<span class="leader-streak">holtversenyben elsÅ‘</span>`
                 : ""
             }
-            ${row.provisional ? `<span class="pill warn">nem végleges</span>` : ""}
+            ${row.provisional ? `<span class="pill warn">nem vÃ©gleges</span>` : ""}
           </div>
           <div class="team-members">
             ${row.memberRows.map((member) => `
               <div>
                 <span>${member.user.name}</span>
                 <strong>${member.points} pont</strong>
-              </div>`).join("") || `<p class="empty small">Nincs beosztott játékos.</p>`}
+              </div>`).join("") || `<p class="empty small">Nincs beosztott jÃ¡tÃ©kos.</p>`}
           </div>
         </article>`).join("")}
     </div>`;
@@ -1321,9 +1325,9 @@ function teamStandingsHtml() {
 
 function resultText(matchId) {
   const { result, status } = effectiveResultFor(matchId);
-  if (!result) return { html: `<span class="muted">Még nincs eredmény</span>`, status };
-  const qualifier = result.qualifier ? `<br><small>Továbbjutó: ${result.qualifier}</small>` : "";
-  const label = status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : "";
+  if (!result) return { html: `<span class="muted">MÃ©g nincs eredmÃ©ny</span>`, status };
+  const qualifier = result.qualifier ? `<br><small>TovÃ¡bbjutÃ³: ${result.qualifier}</small>` : "";
+  const label = status === "pending" ? `<br><span class="pill warn">nem vÃ©gleges</span>` : "";
   return {
     html: `<strong>${result.homeGoals}-${result.awayGoals}</strong>${qualifier}${label}`,
     status
@@ -1359,29 +1363,29 @@ function renderMyTips() {
             <summary>
               <span>
                 <strong>${match.home} - ${match.away}</strong>
-                <small>${formatDate(match.kickoff)} · ${match.label}${match.group ? ` · ${groupLabel(match.group)}` : ""}</small>
+                <small>${formatDate(match.kickoff)} Â· ${match.label}${match.group ? ` Â· ${groupLabel(match.group)}` : ""}</small>
               </span>
               <span class="tips-result">${result.html}</span>
             </summary>
-            <div class="scroll-hint">A táblázat oldalra görgethető.</div>
+            <div class="scroll-hint">A tÃ¡blÃ¡zat oldalra gÃ¶rgethetÅ‘.</div>
             <div class="table-wrap compact-scroll">
               <table class="tips-table">
-                <thead><tr><th>Játékos</th><th>Tipp</th><th>Pont</th></tr></thead>
+                <thead><tr><th>JÃ¡tÃ©kos</th><th>Tipp</th><th>Pont</th></tr></thead>
                 <tbody>
                   ${rows.map((row) => `
                     <tr class="${row.player.id === user?.id ? "own-tip-row" : ""}">
                       <td><strong>${row.player.name}</strong></td>
                       <td>
                         ${row.prediction ? predictionSummary(row.prediction) : `<span class="muted">nincs tipp</span>`}
-                        ${row.pending ? `<br><span class="pill warn">Jóváhagyásra vár: ${predictionSummary(row.pending)}</span>` : ""}
+                        ${row.pending ? `<br><span class="pill warn">JÃ³vÃ¡hagyÃ¡sra vÃ¡r: ${predictionSummary(row.pending)}</span>` : ""}
                       </td>
-                      <td>${row.score ? `<strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}` : "-"}</td>
+                      <td>${row.score ? `<strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem vÃ©gleges</span>` : ""}` : "-"}</td>
                     </tr>`).join("")}
                 </tbody>
               </table>
             </div>
           </details>`;
-      }).join("") || `<p class="empty">Még nincs megjeleníthető tipp.</p>`}
+      }).join("") || `<p class="empty">MÃ©g nincs megjelenÃ­thetÅ‘ tipp.</p>`}
     </div>`;
 }
 
@@ -1392,7 +1396,7 @@ async function changeOwnPassword(event) {
   const message = form.querySelector(".form-message");
   if (!user) return;
   if (form.newPassword.value !== form.newPasswordConfirm.value) {
-    message.textContent = "A két új jelszó nem egyezik.";
+    message.textContent = "A kÃ©t Ãºj jelszÃ³ nem egyezik.";
     return;
   }
   if (shouldUseServerStorage() || !hasWebCrypto()) {
@@ -1409,7 +1413,7 @@ async function changeOwnPassword(event) {
         });
       syncStateFromServer(data.state);
       form.reset();
-      message.textContent = "Jelszó módosítva.";
+      message.textContent = "JelszÃ³ mÃ³dosÃ­tva.";
       form.closest("details")?.removeAttribute("open");
       render();
     } catch (error) {
@@ -1419,7 +1423,7 @@ async function changeOwnPassword(event) {
   }
   if (form.oldPassword) {
     if (!(await verifyPassword(user, form.oldPassword.value))) {
-      message.textContent = "A régi jelszó nem stimmel.";
+      message.textContent = "A rÃ©gi jelszÃ³ nem stimmel.";
       return;
     }
   }
@@ -1428,7 +1432,7 @@ async function changeOwnPassword(event) {
   user.passwordChangedAt = new Date().toISOString();
   saveState();
   form.reset();
-  message.textContent = "Jelszó módosítva.";
+  message.textContent = "JelszÃ³ mÃ³dosÃ­tva.";
   form.closest("details")?.removeAttribute("open");
   render();
 }
@@ -1454,24 +1458,24 @@ function renderTips() {
   els.tipsView.innerHTML = `
     <div class="panel tips-filter-panel">
       <label class="tips-filter">
-        Játékos
+        JÃ¡tÃ©kos
         <select id="tipsUserFilter">
-          <option value="all">Minden játékos</option>
+          <option value="all">Minden jÃ¡tÃ©kos</option>
           ${users.map((user) => `<option value="${user.id}" ${user.id === tipsUserFilter ? "selected" : ""}>${user.name}</option>`).join("")}
         </select>
       </label>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Játékos</th><th>Meccs</th><th>Tipp</th>${isAdmin ? "<th>Időbélyeg</th>" : ""}<th>Pont</th></tr></thead>
+          <thead><tr><th>JÃ¡tÃ©kos</th><th>Meccs</th><th>Tipp</th>${isAdmin ? "<th>IdÅ‘bÃ©lyeg</th>" : ""}<th>Pont</th></tr></thead>
           <tbody>
             ${filteredRows.map((row) => `
               <tr>
                 <td><strong>${row.user?.name || "Ismeretlen"}</strong></td>
                 <td>${row.match.home} - ${row.match.away}<br><small>${formatDate(row.match.kickoff)}</small></td>
-                <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>Továbbjutó: ${row.prediction.qualifier}</small>` : ""}</td>
-                ${isAdmin ? `<td>${formatStamp(row.prediction.updatedAt)}${row.late ? `<br><span class="pill bad">meccs után</span>` : ""}</td>` : ""}
-                <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem végleges</span>` : ""}</td>
-              </tr>`).join("") || `<tr><td colspan="${isAdmin ? 5 : 4}" class="empty">Nincs mentett tipp a kiválasztott játékostól.</td></tr>`}
+                <td>${row.prediction.homeGoals}-${row.prediction.awayGoals}${row.prediction.qualifier ? `<br><small>TovÃ¡bbjutÃ³: ${row.prediction.qualifier}</small>` : ""}</td>
+                ${isAdmin ? `<td>${formatStamp(row.prediction.updatedAt)}${row.late ? `<br><span class="pill bad">meccs utÃ¡n</span>` : ""}</td>` : ""}
+                <td><strong>${row.score.points}</strong>${row.score.status === "pending" ? `<br><span class="pill warn">nem vÃ©gleges</span>` : ""}</td>
+              </tr>`).join("") || `<tr><td colspan="${isAdmin ? 5 : 4}" class="empty">Nincs mentett tipp a kivÃ¡lasztott jÃ¡tÃ©kostÃ³l.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -1492,8 +1496,8 @@ function renderResults() {
     .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff));
   els.resultsView.innerHTML = `
     <div class="panel">
-      <h3>Eredmény beküldése</h3>
-      ${resultMatches.map((match) => resultFormHtml(match, isAdmin)).join("") || `<p class="empty">Minden meccsnek van végleges eredménye.</p>`}
+      <h3>EredmÃ©ny bekÃ¼ldÃ©se</h3>
+      ${resultMatches.map((match) => resultFormHtml(match, isAdmin)).join("") || `<p class="empty">Minden meccsnek van vÃ©gleges eredmÃ©nye.</p>`}
     </div>`;
 
   els.resultsView.querySelectorAll(".result-form").forEach((form) => {
@@ -1524,8 +1528,8 @@ function resultFormHtml(match, isAdmin) {
       <div class="match-meta">
         <span class="pill">${match.label}</span>
         <span class="kickoff">${formatDate(match.kickoff)}</span>
-        ${pending ? `<span class="pill warn">Függő: ${pending.homeGoals}-${pending.awayGoals}${pending.qualifier ? `, továbbjutó: ${pending.qualifier}` : ""}</span>` : ""}
-        ${pending ? `<span>Beküldte: ${pendingUser?.name || "Ismeretlen"}</span>` : ""}
+        ${pending ? `<span class="pill warn">FÃ¼ggÅ‘: ${pending.homeGoals}-${pending.awayGoals}${pending.qualifier ? `, tovÃ¡bbjutÃ³: ${pending.qualifier}` : ""}</span>` : ""}
+        ${pending ? `<span>BekÃ¼ldte: ${pendingUser?.name || "Ismeretlen"}</span>` : ""}
       </div>
       <div class="teams">
         <strong>${match.home}</strong>
@@ -1535,17 +1539,17 @@ function resultFormHtml(match, isAdmin) {
       <form class="result-form" data-match-id="${match.id}">
         <div class="score-inputs">
           <label>Hazai <input name="homeGoals" type="number" min="0" max="20" required /></label>
-          <label>Vendég <input name="awayGoals" type="number" min="0" max="20" required /></label>
+          <label>VendÃ©g <input name="awayGoals" type="number" min="0" max="20" required /></label>
         </div>
         <label class="result-qualifier hidden">
-          Továbbjutó döntetlennél
+          TovÃ¡bbjutÃ³ dÃ¶ntetlennÃ©l
           <select name="qualifier">
-            <option value="">Válassz továbbjutót</option>
+            <option value="">VÃ¡lassz tovÃ¡bbjutÃ³t</option>
           </select>
         </label>
         <div class="result-actions">
-          <button type="submit" class="${pending ? "edit-mode" : ""}">${pending ? "Módosítás" : "Beküldés"}</button>
-          ${isAdmin && pending ? `<button type="button" class="secondary" data-approve="${pending.id}">Jóváhagyás</button>` : ""}
+          <button type="submit" class="${pending ? "edit-mode" : ""}">${pending ? "MÃ³dosÃ­tÃ¡s" : "BekÃ¼ldÃ©s"}</button>
+          ${isAdmin && pending ? `<button type="button" class="secondary" data-approve="${pending.id}">JÃ³vÃ¡hagyÃ¡s</button>` : ""}
         </div>
       </form>
     </article>`;
@@ -1557,28 +1561,28 @@ function finalResultHtml(match, result, isAdmin) {
       <div class="match-meta">
         <span class="pill">${match.label}</span>
         <span class="kickoff">${formatDate(match.kickoff)}</span>
-        <span class="pill">Végleges</span>
+        <span class="pill">VÃ©gleges</span>
       </div>
       <div class="teams">
         <strong>${match.home}</strong>
         <span>${result.homeGoals}-${result.awayGoals}</span>
         <strong>${match.away}</strong>
       </div>
-      ${result.qualifier ? `<p class="muted">Továbbjutó: <strong>${result.qualifier}</strong></p>` : ""}
+      ${result.qualifier ? `<p class="muted">TovÃ¡bbjutÃ³: <strong>${result.qualifier}</strong></p>` : ""}
       ${exactPredictorsHtml(match, result)}
       ${isAdmin ? `
         <form class="approved-result-form" data-match-id="${match.id}">
           <div class="score-inputs">
             <label>Hazai <input name="homeGoals" type="number" min="0" max="20" required value="${result.homeGoals}" /></label>
-            <label>Vendég <input name="awayGoals" type="number" min="0" max="20" required value="${result.awayGoals}" /></label>
+            <label>VendÃ©g <input name="awayGoals" type="number" min="0" max="20" required value="${result.awayGoals}" /></label>
           </div>
           <label class="result-qualifier hidden">
-            Továbbjutó döntetlennél
+            TovÃ¡bbjutÃ³ dÃ¶ntetlennÃ©l
             <select name="qualifier">
-              <option value="">Válassz továbbjutót</option>
+              <option value="">VÃ¡lassz tovÃ¡bbjutÃ³t</option>
             </select>
           </label>
-          <button type="submit">Végleges eredmény módosítása</button>
+          <button type="submit">VÃ©gleges eredmÃ©ny mÃ³dosÃ­tÃ¡sa</button>
         </form>` : ""}
     </article>`;
 }
@@ -1590,17 +1594,17 @@ function pendingResultHtml(match, result, isAdmin) {
       <div class="match-meta">
         <span class="pill">${match.label}</span>
         <span class="kickoff">${formatDate(match.kickoff)}</span>
-        <span class="pill warn">Nem végleges</span>
-        <span>Beküldte: ${user?.name || "Ismeretlen"}</span>
+        <span class="pill warn">Nem vÃ©gleges</span>
+        <span>BekÃ¼ldte: ${user?.name || "Ismeretlen"}</span>
       </div>
       <div class="teams">
         <strong>${match.home}</strong>
         <span>${result.homeGoals}-${result.awayGoals}</span>
         <strong>${match.away}</strong>
       </div>
-      ${result.qualifier ? `<p class="muted">Továbbjutó: <strong>${result.qualifier}</strong></p>` : ""}
+      ${result.qualifier ? `<p class="muted">TovÃ¡bbjutÃ³: <strong>${result.qualifier}</strong></p>` : ""}
       ${exactPredictorsHtml(match, result)}
-      ${isAdmin ? `<button type="button" class="secondary" data-approve="${result.id}">Jóváhagyás</button>` : ""}
+      ${isAdmin ? `<button type="button" class="secondary" data-approve="${result.id}">JÃ³vÃ¡hagyÃ¡s</button>` : ""}
     </article>`;
 }
 
@@ -1619,8 +1623,8 @@ function exactPredictorsHtml(match, result) {
     .filter((user) => user && !user.isSystemAdmin)
     .map((user) => user.name);
   return names.length
-    ? `<p class="muted">Pontos találat: <strong>${names.join(", ")}</strong></p>`
-    : `<p class="muted">Pontos találat: nincs</p>`;
+    ? `<p class="muted">Pontos talÃ¡lat: <strong>${names.join(", ")}</strong></p>`
+    : `<p class="muted">Pontos talÃ¡lat: nincs</p>`;
 }
 
 function emptyGroupRow(team, group) {
@@ -1664,7 +1668,7 @@ function groupStandings() {
     const rows = Array.from(table.values()).sort(sortGroupRows);
     rows.forEach((row, index) => {
       row.rank = index + 1;
-      row.advance = index < 2 ? "Továbbjutó" : "";
+      row.advance = index < 2 ? "TovÃ¡bbjutÃ³" : "";
     });
     return { group, rows };
   }).sort((a, b) => a.group.localeCompare(b.group, "hu"));
@@ -1682,14 +1686,14 @@ function sortGroupRows(a, b) {
 
 function groupStandingsHtml() {
   const groups = groupStandings();
-  if (!groups.length) return `<p class="empty">Nincs csoportkörös meccs a listában.</p>`;
+  if (!groups.length) return `<p class="empty">Nincs csoportkÃ¶rÃ¶s meccs a listÃ¡ban.</p>`;
   return `
     <div class="group-grid">
       ${groups.map(({ group, rows }) => `
         <div class="table-wrap group-table">
           <h3>${group}. csoport</h3>
           <table>
-            <thead><tr><th>#</th><th>Csapat</th><th>M</th><th>GY</th><th>D</th><th>V</th><th>GK</th><th>P</th><th>Állás</th></tr></thead>
+            <thead><tr><th>#</th><th>Csapat</th><th>M</th><th>GY</th><th>D</th><th>V</th><th>GK</th><th>P</th><th>ÃllÃ¡s</th></tr></thead>
             <tbody>
               ${rows.map((row) => `
                 <tr>
@@ -1760,8 +1764,8 @@ function bracketMatchTeams(slot) {
   return {
     home: bracketParticipantLabel(slot.homeFrom, sourceType),
     away: bracketParticipantLabel(slot.awayFrom, sourceType),
-    homeSource: `${slot.homeFrom}. meccs ${sourceType === "loser" ? "vesztese" : "győztese"}`,
-    awaySource: `${slot.awayFrom}. meccs ${sourceType === "loser" ? "vesztese" : "győztese"}`
+    homeSource: `${slot.homeFrom}. meccs ${sourceType === "loser" ? "vesztese" : "gyÅ‘ztese"}`,
+    awaySource: `${slot.awayFrom}. meccs ${sourceType === "loser" ? "vesztese" : "gyÅ‘ztese"}`
   };
 }
 
@@ -1782,13 +1786,13 @@ function plannedMatchFor(slot) {
 
 function bracketParticipantLabel(matchNo, type = "winner") {
   const sourceSlot = bracketSlotByNo(matchNo);
-  if (!sourceSlot) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  if (!sourceSlot) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "gyÅ‘ztese"}`;
   const sourceMatch = plannedMatchFor(sourceSlot);
-  if (!sourceMatch) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  if (!sourceMatch) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "gyÅ‘ztese"}`;
   const { result } = effectiveResultFor(sourceMatch.id);
-  if (!result) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  if (!result) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "gyÅ‘ztese"}`;
   const winner = knockoutWinner(sourceMatch, result);
-  if (!winner) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "győztese"}`;
+  if (!winner) return `${matchNo}. meccs ${type === "loser" ? "vesztese" : "gyÅ‘ztese"}`;
   if (type === "winner") return winner;
   return winner === sourceMatch.home ? sourceMatch.away : sourceMatch.home;
 }
@@ -1847,11 +1851,11 @@ function bracketSlotHtml(slot, matchIndex, roundIndex) {
   const resultInfo = match ? effectiveResultFor(match.id) : { result: null, status: "" };
   const score = resultInfo.result ? `${resultInfo.result.homeGoals}-${resultInfo.result.awayGoals}` : "";
   const winner = match && resultInfo.result ? knockoutWinner(match, resultInfo.result) : "";
-  const qualifier = winner ? `<span class="bracket-winner">Továbbjutó: ${winner}</span>` : "";
+  const qualifier = winner ? `<span class="bracket-winner">TovÃ¡bbjutÃ³: ${winner}</span>` : "";
   const status = resultInfo.status === "approved"
-    ? `<span class="pill">végleges</span>`
+    ? `<span class="pill">vÃ©gleges</span>`
     : resultInfo.status === "pending"
-      ? `<span class="pill warn">nem végleges</span>`
+      ? `<span class="pill warn">nem vÃ©gleges</span>`
       : "";
   const layout = bracketLayout(roundIndex, slot);
   const terminal = roundIndex === knockoutBracketRounds.length - 1 ? " bracket-terminal" : "";
@@ -1885,7 +1889,7 @@ function knockoutBracketHtml() {
           </section>`).join("")}
       </div>
     </div>
-    <p class="muted bracket-note">Az ág a FIFA meccsszámain alapul. A legjobb 32-es párok a csoportállásból és a feltöltött meccsekből jönnek, a későbbi körök pedig az előző meccsek továbbjutóiból épülnek fel.</p>`;
+    <p class="muted bracket-note">Az Ã¡g a FIFA meccsszÃ¡main alapul. A legjobb 32-es pÃ¡rok a csoportÃ¡llÃ¡sbÃ³l Ã©s a feltÃ¶ltÃ¶tt meccsekbÅ‘l jÃ¶nnek, a kÃ©sÅ‘bbi kÃ¶rÃ¶k pedig az elÅ‘zÅ‘ meccsek tovÃ¡bbjutÃ³ibÃ³l Ã©pÃ¼lnek fel.</p>`;
 }
 
 function renderPlayed() {
@@ -1897,19 +1901,19 @@ function renderPlayed() {
 
   els.playedView.innerHTML = `
     <div class="panel">
-      <h3>Kieséses ág</h3>
+      <h3>KiesÃ©ses Ã¡g</h3>
       ${knockoutBracketHtml()}
     </div>
     <div class="panel">
-      <h3>Csoportállás</h3>
+      <h3>CsoportÃ¡llÃ¡s</h3>
       ${groupStandingsHtml()}
     </div>
     <div class="panel">
-      <h3>Eredmények</h3>
+      <h3>EredmÃ©nyek</h3>
       ${rows.map((row) => row.status === "approved"
         ? finalResultHtml(row.match, row.result, isAdmin)
         : pendingResultHtml(row.match, row.result, isAdmin)
-      ).join("") || `<p class="empty">Még nincs beküldött eredmény.</p>`}
+      ).join("") || `<p class="empty">MÃ©g nincs bekÃ¼ldÃ¶tt eredmÃ©ny.</p>`}
     </div>`;
 
   els.playedView.querySelectorAll(".approved-result-form").forEach((form) => {
@@ -1938,7 +1942,7 @@ function renderAdmin() {
   const missingUpcomingTips = missingUpcomingTipRows();
   els.adminView.innerHTML = `
     <div class="panel">
-      <h3>Admin jóváhagyás</h3>
+      <h3>Admin jÃ³vÃ¡hagyÃ¡s</h3>
       ${pending.map((item) => {
         const match = matchById(item.matchId);
         const user = userById(item.userId);
@@ -1946,124 +1950,124 @@ function renderAdmin() {
         return `
           <div class="approval-row">
             <div>
-              <span class="pill warn">függőben</span>
+              <span class="pill warn">fÃ¼ggÅ‘ben</span>
               <strong>${match.home} ${item.homeGoals}-${item.awayGoals} ${match.away}</strong>
-              ${item.qualifier ? `<span>Továbbjutó: ${item.qualifier}</span>` : ""}
-              <span>Beküldte: ${user?.name || "Ismeretlen"} · ${formatStamp(item.submittedAt)}</span>
-              ${relatedPredictionCount ? `<span class="pill warn">${relatedPredictionCount} függő tippmódosítás ennél a meccsnél</span>` : ""}
+              ${item.qualifier ? `<span>TovÃ¡bbjutÃ³: ${item.qualifier}</span>` : ""}
+              <span>BekÃ¼ldte: ${user?.name || "Ismeretlen"} Â· ${formatStamp(item.submittedAt)}</span>
+              ${relatedPredictionCount ? `<span class="pill warn">${relatedPredictionCount} fÃ¼ggÅ‘ tippmÃ³dosÃ­tÃ¡s ennÃ©l a meccsnÃ©l</span>` : ""}
             </div>
             <div class="approval-actions">
-              <button type="button" data-approve="${item.id}">Jóváhagyás</button>
-              <button class="danger" type="button" data-reject="${item.id}">Elutasítás</button>
+              <button type="button" data-approve="${item.id}">JÃ³vÃ¡hagyÃ¡s</button>
+              <button class="danger" type="button" data-reject="${item.id}">ElutasÃ­tÃ¡s</button>
             </div>
           </div>`;
-      }).join("") || `<p class="empty">Nincs jóváhagyásra váró eredmény.</p>`}
+      }).join("") || `<p class="empty">Nincs jÃ³vÃ¡hagyÃ¡sra vÃ¡rÃ³ eredmÃ©ny.</p>`}
     </div>
     <div class="panel">
-      <h3>Tippmódosítások jóváhagyása</h3>
+      <h3>TippmÃ³dosÃ­tÃ¡sok jÃ³vÃ¡hagyÃ¡sa</h3>
       ${pendingPredictions.map((item) => {
         const match = matchById(item.matchId);
         const user = userById(item.userId);
         const resultInfo = effectiveResultFor(item.matchId);
         const resultStatus = resultInfo.status === "approved"
-          ? "az eredmény már végleges"
+          ? "az eredmÃ©ny mÃ¡r vÃ©gleges"
           : resultInfo.status === "pending"
-          ? "az eredmény még jóváhagyásra vár"
-          : "még nincs eredmény";
+          ? "az eredmÃ©ny mÃ©g jÃ³vÃ¡hagyÃ¡sra vÃ¡r"
+          : "mÃ©g nincs eredmÃ©ny";
         return `
           <div class="approval-row">
             <div>
-              <span class="pill warn">függőben</span>
+              <span class="pill warn">fÃ¼ggÅ‘ben</span>
               <strong>${user?.name || "Ismeretlen"}: ${match.home} ${item.homeGoals}-${item.awayGoals} ${match.away}</strong>
-              ${item.qualifier ? `<span>Továbbjutó: ${item.qualifier}</span>` : ""}
+              ${item.qualifier ? `<span>TovÃ¡bbjutÃ³: ${item.qualifier}</span>` : ""}
               <span class="pill info">${resultStatus}</span>
               <span>${formatStamp(item.submittedAt)}</span>
             </div>
             <div class="approval-actions">
-              <button type="button" data-approve-prediction="${item.id}">Jóváhagyás</button>
-              <button class="danger" type="button" data-reject-prediction="${item.id}">Elutasítás</button>
+              <button type="button" data-approve-prediction="${item.id}">JÃ³vÃ¡hagyÃ¡s</button>
+              <button class="danger" type="button" data-reject-prediction="${item.id}">ElutasÃ­tÃ¡s</button>
             </div>
           </div>`;
-      }).join("") || `<p class="empty">Nincs jóváhagyásra váró tippmódosítás.</p>`}
+      }).join("") || `<p class="empty">Nincs jÃ³vÃ¡hagyÃ¡sra vÃ¡rÃ³ tippmÃ³dosÃ­tÃ¡s.</p>`}
     </div>
     <div class="panel">
-      <h3>Jelszó-visszaállítási kérések</h3>
+      <h3>JelszÃ³-visszaÃ¡llÃ­tÃ¡si kÃ©rÃ©sek</h3>
       ${passwordRequests.map((item) => {
         const requestUser = userById(item.userId);
         return `
           <div class="approval-row password-reset-row">
             <div>
-              <span class="pill warn">jelszó kérés</span>
+              <span class="pill warn">jelszÃ³ kÃ©rÃ©s</span>
               <strong>${requestUser?.name || item.requestedName}</strong>
               <span>${formatStamp(item.requestedAt)}</span>
             </div>
             <div class="approval-actions">
-              ${requestUser ? `<input data-reset-request-password="${item.id}" type="text" placeholder="új jelszó" />` : `<span class="muted">Nincs ilyen játékos</span>`}
-              ${requestUser ? `<button type="button" data-reset-request="${item.id}">Jelszó beállítása</button>` : ""}
-              <button class="secondary" type="button" data-close-reset-request="${item.id}">Lezárás</button>
+              ${requestUser ? `<input data-reset-request-password="${item.id}" type="text" placeholder="Ãºj jelszÃ³" />` : `<span class="muted">Nincs ilyen jÃ¡tÃ©kos</span>`}
+              ${requestUser ? `<button type="button" data-reset-request="${item.id}">JelszÃ³ beÃ¡llÃ­tÃ¡sa</button>` : ""}
+              <button class="secondary" type="button" data-close-reset-request="${item.id}">LezÃ¡rÃ¡s</button>
             </div>
           </div>`;
-      }).join("") || `<p class="empty">Nincs jelszó-visszaállítási kérés.</p>`}
+      }).join("") || `<p class="empty">Nincs jelszÃ³-visszaÃ¡llÃ­tÃ¡si kÃ©rÃ©s.</p>`}
     </div>
     <div class="panel">
-      <h3>Hiányzó tippek elmúlt meccseken (${missingPastTips.length})</h3>
-      ${missingTipsHtml(missingPastTips, "Nincs hiányzó tipp elmúlt meccsen.")}
+      <h3>HiÃ¡nyzÃ³ tippek elmÃºlt meccseken (${missingPastTips.length})</h3>
+      ${missingTipsHtml(missingPastTips, "Nincs hiÃ¡nyzÃ³ tipp elmÃºlt meccsen.")}
     </div>
     <div class="panel">
-      <h3>Hiányzó tippek a következő 24 órában (${missingUpcomingTips.length})</h3>
-      ${upcomingMissingTipsHtml(missingUpcomingTips, "Nincs hiányzó tipp a következő 24 órában kezdődő meccseken.")}
+      <h3>HiÃ¡nyzÃ³ tippek a kÃ¶vetkezÅ‘ 24 Ã³rÃ¡ban (${missingUpcomingTips.length})</h3>
+      ${upcomingMissingTipsHtml(missingUpcomingTips, "Nincs hiÃ¡nyzÃ³ tipp a kÃ¶vetkezÅ‘ 24 Ã³rÃ¡ban kezdÅ‘dÅ‘ meccseken.")}
     </div>
     <div class="panel">
-      <h3>Utólagos tipp rögzítése</h3>
+      <h3>UtÃ³lagos tipp rÃ¶gzÃ­tÃ©se</h3>
       <form id="adminPredictionForm" class="admin-prediction-form">
         <div class="score-inputs">
-          <label>Játékos <select name="userId" required></select></label>
+          <label>JÃ¡tÃ©kos <select name="userId" required></select></label>
           <label>Meccs <select name="matchId" required></select></label>
         </div>
         <div class="score-inputs">
           <label>Hazai <input name="homeGoals" type="number" min="0" max="20" required /></label>
-          <label>Vendég <input name="awayGoals" type="number" min="0" max="20" required /></label>
+          <label>VendÃ©g <input name="awayGoals" type="number" min="0" max="20" required /></label>
         </div>
         <label class="admin-qualifier-row hidden">
-          Továbbjutó döntetlen tippnél
+          TovÃ¡bbjutÃ³ dÃ¶ntetlen tippnÃ©l
           <select name="qualifier">
-            <option value="">Válassz továbbjutót</option>
+            <option value="">VÃ¡lassz tovÃ¡bbjutÃ³t</option>
           </select>
         </label>
-        <button type="submit">Tipp mentése játékosnak</button>
+        <button type="submit">Tipp mentÃ©se jÃ¡tÃ©kosnak</button>
       </form>
     </div>
     <div class="panel">
-      <h3>Meccs hozzáadása kézzel</h3>
+      <h3>Meccs hozzÃ¡adÃ¡sa kÃ©zzel</h3>
       <form id="manualMatchForm" class="admin-prediction-form">
         <div class="score-inputs">
           <label>Hazai csapat <input name="home" required /></label>
           <label>Idegen csapat <input name="away" required /></label>
         </div>
         <div class="score-inputs">
-          <label>Időpont <input name="kickoff" type="datetime-local" required /></label>
-          <label>Meccs státusz <input name="label" placeholder="pl. Csoportkör, Nyolcaddöntő" required /></label>
+          <label>IdÅ‘pont <input name="kickoff" type="datetime-local" required /></label>
+          <label>Meccs stÃ¡tusz <input name="label" placeholder="pl. CsoportkÃ¶r, NyolcaddÃ¶ntÅ‘" required /></label>
         </div>
-        <label>Csoport <input name="group" placeholder="opcionális" /></label>
-        <button type="submit">Meccs hozzáadása</button>
+        <label>Csoport <input name="group" placeholder="opcionÃ¡lis" /></label>
+        <button type="submit">Meccs hozzÃ¡adÃ¡sa</button>
         <p class="form-message"></p>
       </form>
     </div>
     <div class="panel">
-      <h3>Meccsek feltöltése CSV-ből</h3>
+      <h3>Meccsek feltÃ¶ltÃ©se CSV-bÅ‘l</h3>
       <form id="matchUploadForm" class="admin-prediction-form">
-        <label>CSV fájl <input name="csvFile" type="file" accept=".csv,text/csv" required /></label>
-        <label class="checkbox-line"><input name="replaceMatches" type="checkbox" /> Meglévő meccsek cseréje</label>
-        <button type="submit">Meccsek feltöltése</button>
-        <p class="muted">Mezők: hazai csapat, idegen csapat, időpont, meccs status. A csoport oszlop opcionális.</p>
+        <label>CSV fÃ¡jl <input name="csvFile" type="file" accept=".csv,text/csv" required /></label>
+        <label class="checkbox-line"><input name="replaceMatches" type="checkbox" /> MeglÃ©vÅ‘ meccsek cserÃ©je</label>
+        <button type="submit">Meccsek feltÃ¶ltÃ©se</button>
+        <p class="muted">MezÅ‘k: hazai csapat, idegen csapat, idÅ‘pont, meccs status. A csoport oszlop opcionÃ¡lis.</p>
         <p class="form-message"></p>
       </form>
     </div>
     <div class="panel">
-      <h3>Meccsek szerkesztése</h3>
+      <h3>Meccsek szerkesztÃ©se</h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Hazai</th><th>Idegen</th><th>Időpont</th><th>Státusz</th><th>Csoport</th><th></th></tr></thead>
+          <thead><tr><th>Hazai</th><th>Idegen</th><th>IdÅ‘pont</th><th>StÃ¡tusz</th><th>Csoport</th><th></th></tr></thead>
           <tbody>
             ${state.matches.slice().sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff)).map((match) => `
               <tr data-match-edit="${match.id}">
@@ -2072,67 +2076,67 @@ function renderAdmin() {
                 <td><input name="kickoff" type="datetime-local" value="${localDateTimeValue(match.kickoff)}" /></td>
                 <td><input name="label" value="${match.label}" /></td>
                 <td><input name="group" value="${match.group || ""}" /></td>
-                <td><button type="button" class="secondary" data-save-match="${match.id}">Mentés</button></td>
-              </tr>`).join("") || `<tr><td colspan="6" class="empty">Nincs feltöltött meccs.</td></tr>`}
+                <td><button type="button" class="secondary" data-save-match="${match.id}">MentÃ©s</button></td>
+              </tr>`).join("") || `<tr><td colspan="6" class="empty">Nincs feltÃ¶ltÃ¶tt meccs.</td></tr>`}
           </tbody>
         </table>
       </div>
     </div>
     <div class="panel">
-      <h3>Játékosok kezelése</h3>
+      <h3>JÃ¡tÃ©kosok kezelÃ©se</h3>
       <form id="createUserForm" class="admin-prediction-form">
         <div class="score-inputs">
-          <label>Felhasználónév <input name="name" autocomplete="off" required /></label>
-          <label>Ideiglenes jelszó <input name="password" type="text" required /></label>
+          <label>FelhasznÃ¡lÃ³nÃ©v <input name="name" autocomplete="off" required /></label>
+          <label>Ideiglenes jelszÃ³ <input name="password" type="text" required /></label>
         </div>
         <label class="checkbox-line"><input name="isAdmin" type="checkbox" /> Admin jog</label>
-        <button type="submit">Felhasználó létrehozása</button>
+        <button type="submit">FelhasznÃ¡lÃ³ lÃ©trehozÃ¡sa</button>
         <p class="form-message"></p>
       </form>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Név</th><th>Szerep</th><th>Új jelszó</th><th>Műveletek</th></tr></thead>
+          <thead><tr><th>NÃ©v</th><th>Szerep</th><th>Ãšj jelszÃ³</th><th>MÅ±veletek</th></tr></thead>
           <tbody>
             ${state.users.map((item) => `
               <tr>
                 <td><strong>${item.name}</strong></td>
-                <td>${item.isSystemAdmin ? "alap admin" : item.isAdmin ? "admin játékos" : "játékos"}${item.mustChangePassword ? `<br><span class="pill warn">jelszócsere kell</span>` : ""}</td>
-                <td><input data-reset-password="${item.id}" type="text" placeholder="új jelszó" /></td>
+                <td>${item.isSystemAdmin ? "alap admin" : item.isAdmin ? "admin jÃ¡tÃ©kos" : "jÃ¡tÃ©kos"}${item.mustChangePassword ? `<br><span class="pill warn">jelszÃ³csere kell</span>` : ""}</td>
+                <td><input data-reset-password="${item.id}" type="text" placeholder="Ãºj jelszÃ³" /></td>
                 <td>
                   <div class="result-actions">
                     ${item.isSystemAdmin ? ""
                       : item.isAdmin
-                      ? `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="0" ${item.id === currentUserId ? "disabled" : ""}>Admin elvétele</button>`
-                      : `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="1">Admin adása</button>`}
-                    <button type="button" class="secondary" data-reset-user="${item.id}">Jelszó visszaállítása</button>
-                    <button type="button" class="danger" data-delete-user="${item.id}" ${item.id === currentUserId || item.isSystemAdmin ? "disabled" : ""}>Törlés</button>
+                      ? `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="0" ${item.id === currentUserId ? "disabled" : ""}>Admin elvÃ©tele</button>`
+                      : `<button type="button" class="secondary" data-admin-role="${item.id}" data-admin-role-value="1">Admin adÃ¡sa</button>`}
+                    <button type="button" class="secondary" data-reset-user="${item.id}">JelszÃ³ visszaÃ¡llÃ­tÃ¡sa</button>
+                    <button type="button" class="danger" data-delete-user="${item.id}" ${item.id === currentUserId || item.isSystemAdmin ? "disabled" : ""}>TÃ¶rlÃ©s</button>
                   </div>
                 </td>
-              </tr>`).join("") || `<tr><td colspan="4" class="empty">Nincs játékos.</td></tr>`}
+              </tr>`).join("") || `<tr><td colspan="4" class="empty">Nincs jÃ¡tÃ©kos.</td></tr>`}
           </tbody>
         </table>
       </div>
     </div>
     <div class="panel">
-      <h3>Csapatverseny beosztás</h3>
+      <h3>Csapatverseny beosztÃ¡s</h3>
       <div class="team-admin-grid">
         ${playerUsers().map((item) => `
           <label class="team-assignment-row">
-            <span>${item.name}${item.isAdmin ? " · admin" : ""}</span>
+            <span>${item.name}${item.isAdmin ? " Â· admin" : ""}</span>
             <select data-team-assignment="${item.id}">
               <option value="">Nincs csapatban</option>
               ${TEAM_COMPETITION_TEAMS.map((team) => `<option value="${team.id}" ${userTeamId(item.id) === team.id ? "selected" : ""}>${team.name}</option>`).join("")}
             </select>
-          </label>`).join("") || `<p class="empty">Nincs beosztható játékos.</p>`}
+          </label>`).join("") || `<p class="empty">Nincs beoszthatÃ³ jÃ¡tÃ©kos.</p>`}
       </div>
     </div>
     <div class="panel">
-      <h3>Karbantartás</h3>
-      <button class="secondary" type="button" id="exportBtn">Adatok exportálása JSON-ként</button>
+      <h3>KarbantartÃ¡s</h3>
+      <button class="secondary" type="button" id="exportBtn">Adatok exportÃ¡lÃ¡sa JSON-kÃ©nt</button>
       <form id="importDataForm" class="admin-prediction-form">
-        <label>Korábbi mentés <input name="dataFile" type="file" accept="application/json,.json" required /></label>
-        <p class="muted">A visszaállítás a jelenlegi felhasználókat, meccseket, tippeket és eredményeket teljesen felülírja.</p>
-        <button class="danger" type="submit">Adatok visszaállítása JSON-ből</button>
+        <label>KorÃ¡bbi mentÃ©s <input name="dataFile" type="file" accept="application/json,.json" required /></label>
+        <p class="muted">A visszaÃ¡llÃ­tÃ¡s a jelenlegi felhasznÃ¡lÃ³kat, meccseket, tippeket Ã©s eredmÃ©nyeket teljesen felÃ¼lÃ­rja.</p>
+        <button class="danger" type="submit">Adatok visszaÃ¡llÃ­tÃ¡sa JSON-bÅ‘l</button>
         <p class="form-message"></p>
       </form>
     </div>`;
@@ -2162,12 +2166,12 @@ function setupAdminPredictionForm() {
   const form = els.adminView.querySelector("#adminPredictionForm");
   if (!form) return;
   form.userId.innerHTML = playerUsers()
-    .map((user) => `<option value="${user.id}">${user.name}${user.isAdmin ? " · admin" : ""}</option>`)
+    .map((user) => `<option value="${user.id}">${user.name}${user.isAdmin ? " Â· admin" : ""}</option>`)
     .join("");
   form.matchId.innerHTML = state.matches
     .slice()
     .sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
-    .map((match) => `<option value="${match.id}">${formatDate(match.kickoff)} · ${match.home} - ${match.away}</option>`)
+    .map((match) => `<option value="${match.id}">${formatDate(match.kickoff)} Â· ${match.home} - ${match.away}</option>`)
     .join("");
 
   const update = () => {
@@ -2211,7 +2215,7 @@ function hideMissingTip(value) {
 
 function requestPasswordReset(name) {
   const requestedName = name.trim();
-  if (!requestedName) throw new Error("Add meg a felhasználóneved.");
+  if (!requestedName) throw new Error("Add meg a felhasznÃ¡lÃ³neved.");
   const user = state.users.find((item) => item.name.toLowerCase() === requestedName.toLowerCase());
   const existing = state.passwordResetRequests.find((item) => {
     const sameKnownUser = user && item.userId === user.id;
@@ -2282,7 +2286,7 @@ async function createUserFromAdminForm(event) {
   try {
     await createUserByAdmin(form.name.value, form.password.value, form.isAdmin.checked);
     form.reset();
-    message.textContent = "Felhasználó létrehozva. Első belépéskor jelszót kell módosítania.";
+    message.textContent = "FelhasznÃ¡lÃ³ lÃ©trehozva. ElsÅ‘ belÃ©pÃ©skor jelszÃ³t kell mÃ³dosÃ­tania.";
     render();
   } catch (error) {
     message.textContent = error.message;
@@ -2327,7 +2331,7 @@ function addManualMatch(event) {
 
   const kickoff = new Date(form.kickoff.value);
   if (Number.isNaN(kickoff.getTime())) {
-    message.textContent = "Hibás időpont.";
+    message.textContent = "HibÃ¡s idÅ‘pont.";
     return;
   }
 
@@ -2343,7 +2347,7 @@ function addManualMatch(event) {
   });
   saveState();
   form.reset();
-  message.textContent = "Meccs hozzáadva.";
+  message.textContent = "Meccs hozzÃ¡adva.";
   render();
 }
 
@@ -2356,7 +2360,7 @@ async function importMatchesFromCsv(event) {
   try {
     const text = await readCsvFileText(file);
     const rows = parseCsv(text);
-    if (rows.length < 2) throw new Error("A CSV üres.");
+    if (rows.length < 2) throw new Error("A CSV Ã¼res.");
     const headers = rows[0].map(normalizeHeader);
     const imported = rows.slice(1)
       .filter((row) => row.some((cell) => cell.trim()))
@@ -2374,7 +2378,7 @@ async function importMatchesFromCsv(event) {
     }
     saveState();
     form.reset();
-    message.textContent = `${imported.length} meccs feltöltve.`;
+    message.textContent = `${imported.length} meccs feltÃ¶ltve.`;
     render();
   } catch (error) {
     message.textContent = error.message;
@@ -2442,11 +2446,11 @@ function csvRowToMatch(headers, row, index) {
   const home = csvValue(headers, row, ["hazaicsapat", "hazai", "home"]);
   const away = csvValue(headers, row, ["idegencsapat", "idegen", "vendeg", "away"]);
   const kickoff = csvValue(headers, row, ["idopont", "datum", "date", "kickoff"]);
-  const label = csvValue(headers, row, ["meccsstatus", "status", "szakasz", "stage"]) || "Csoportkör";
+  const label = csvValue(headers, row, ["meccsstatus", "status", "szakasz", "stage"]) || "CsoportkÃ¶r";
   const group = csvValue(headers, row, ["csoport", "group"]);
-  if (!home || !away || !kickoff) throw new Error(`Hiányzó adat a(z) ${index + 2}. sorban.`);
+  if (!home || !away || !kickoff) throw new Error(`HiÃ¡nyzÃ³ adat a(z) ${index + 2}. sorban.`);
   const date = parseCsvDate(kickoff);
-  if (Number.isNaN(date.getTime())) throw new Error(`Hibás időpont a(z) ${index + 2}. sorban.`);
+  if (Number.isNaN(date.getTime())) throw new Error(`HibÃ¡s idÅ‘pont a(z) ${index + 2}. sorban.`);
   return {
     id: `csv-${Date.now()}-${index}`,
     home,
@@ -2653,9 +2657,9 @@ async function importData(event) {
   try {
     const imported = JSON.parse(await file.text());
     if (!imported || typeof imported !== "object" || Array.isArray(imported)) {
-      throw new Error("A kiválasztott fájl nem érvényes adatmentés.");
+      throw new Error("A kivÃ¡lasztott fÃ¡jl nem Ã©rvÃ©nyes adatmentÃ©s.");
     }
-    if (!window.confirm("Biztosan visszaállítod ezt a mentést? A jelenlegi adatok teljesen felülíródnak.")) return;
+    if (!window.confirm("Biztosan visszaÃ¡llÃ­tod ezt a mentÃ©st? A jelenlegi adatok teljesen felÃ¼lÃ­rÃ³dnak.")) return;
 
     state = normalizeState(imported);
     stripPlainPasswords(state);
@@ -2665,10 +2669,10 @@ async function importData(event) {
       clearCurrentUser();
     }
     render();
-    els.adminView.querySelector("#importDataForm .form-message")?.append("Az adatok visszaállítása elkészült.");
+    els.adminView.querySelector("#importDataForm .form-message")?.append("Az adatok visszaÃ¡llÃ­tÃ¡sa elkÃ©szÃ¼lt.");
   } catch (error) {
     message.textContent = error instanceof SyntaxError
-      ? "A fájl nem érvényes JSON formátumú."
+      ? "A fÃ¡jl nem Ã©rvÃ©nyes JSON formÃ¡tumÃº."
       : error.message;
   }
 }
@@ -2727,7 +2731,7 @@ els.passwordResetForm.addEventListener("submit", (event) => {
   event.preventDefault();
   try {
     requestPasswordReset(els.passwordResetName.value);
-    els.loginMessage.textContent = "A jelszó-visszaállítási kérés elküldve az adminoknak.";
+    els.loginMessage.textContent = "A jelszÃ³-visszaÃ¡llÃ­tÃ¡si kÃ©rÃ©s elkÃ¼ldve az adminoknak.";
     els.passwordResetForm.reset();
     closePasswordResetDialog();
   } catch (error) {
@@ -2775,7 +2779,7 @@ setInterval(checkMatchReminders, 60 * 1000);
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {
-      // A PWA telepíthetőség HTTPS-en vagy localhoston működik; file:// alatt csendben kihagyjuk.
+      // A PWA telepÃ­thetÅ‘sÃ©g HTTPS-en vagy localhoston mÅ±kÃ¶dik; file:// alatt csendben kihagyjuk.
     });
   });
 }
